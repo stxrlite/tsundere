@@ -11,9 +11,8 @@ Tsundere is not trying to be a giant prebuilt bot. It does not ship economy, tic
 ## Why Use It
 
 - You want Discord.js-style power with cleaner project commands.
-- You want `.yuri` files that feel familiar, typed, and Discord-focused.
+- You want `.yuri` files (who doesnt ;) its so cool!)
 - You want `tsundere dev` to build, run, watch, and restart your bot.
-- You want `tsundere start` instead of manually running `node build/main.ts`.
 - You want slash command discovery without writing a loader loop every time.
 - You want a local Discord wrapper package that resolves reliably in new projects.
 - You want docs, examples, templates, and editor support bundled with the tool.

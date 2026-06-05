@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -25,48 +25,28 @@
     </aside>
     <main class="mx-auto w-full max-w-5xl px-6 py-10">
       <h1 class="text-4xl font-bold tracking-tight">Roadmap</h1>
-      <p class="mt-4 text-lg leading-8 text-slate-600">Tsundere is meant to become a serious Discord-first language ecosystem without becoming a locked-in bot framework.</p>
+      <p class="mt-4 text-lg leading-8 text-slate-600">Tsundere is a Discord-first language ecosystem. The long-term goal is not only cleaner syntax, but better protection, deeper static analysis, visual tooling, and a plugin ecosystem that solves real bot development pain.</p>
 
       <section class="mt-10 grid gap-4 md:grid-cols-2">
         <div class="rounded-lg border border-slate-200 p-5">
-          <h2 class="text-xl font-semibold">Compiler</h2>
-          <ul class="mt-3 list-disc space-y-2 pl-6 text-slate-700">
-            <li>Full AST parser for `.yuri` files.</li>
-            <li>Cleaner TypeScript AST emission.</li>
-            <li>Incremental build cache.</li>
-            <li>Better source maps from `.yuri` to runtime JavaScript.</li>
-            <li>More precise strict diagnostics.</li>
-          </ul>
+          <h2 class="text-xl font-semibold">Tsundere Protect</h2>
+          <p class="mt-3 text-slate-600">A modular Node.js protection pipeline with profiles for standard, advanced, and maximum builds. Protect should combine obfuscation, string encryption, runtime integrity, build randomization, and fingerprinting.</p>
+          <a class="mt-4 inline-flex text-sm font-semibold text-pink-700" href="protect.html">Read Protect docs</a>
         </div>
         <div class="rounded-lg border border-slate-200 p-5">
-          <h2 class="text-xl font-semibold">Discord</h2>
-          <ul class="mt-3 list-disc space-y-2 pl-6 text-slate-700">
-            <li>Richer interaction narrowing.</li>
-            <li>Typed component payload serialization.</li>
-            <li>Schema-powered command options.</li>
-            <li>Better command sync for guild and global commands.</li>
-            <li>More Discord limit checks at compile time.</li>
-          </ul>
+          <h2 class="text-xl font-semibold">Discord Intelligence</h2>
+          <p class="mt-3 text-slate-600">Compiler and editor analysis for intents, permissions, role hierarchy, OAuth scopes, Discord API compatibility, deprecations, and migration warnings before deployment.</p>
+          <a class="mt-4 inline-flex text-sm font-semibold text-pink-700" href="discord-intelligence.html">Read Intelligence docs</a>
         </div>
         <div class="rounded-lg border border-slate-200 p-5">
-          <h2 class="text-xl font-semibold">Editor</h2>
-          <ul class="mt-3 list-disc space-y-2 pl-6 text-slate-700">
-            <li>YuriLS workspace indexing.</li>
-            <li>Generated IntelliSense from installed Discord packages.</li>
-            <li>Auto imports for `@tsundere/discord` symbols.</li>
-            <li>Hover docs with required intents and permissions.</li>
-            <li>Command and component snippets.</li>
-          </ul>
+          <h2 class="text-xl font-semibold">Command Visualizer</h2>
+          <p class="mt-3 text-slate-600">A VS Code panel that graphs commands, groups, subcommands, components, modals, handlers, services, and duplicate or dead commands.</p>
+          <a class="mt-4 inline-flex text-sm font-semibold text-pink-700" href="visualizer.html">Read Visualizer docs</a>
         </div>
         <div class="rounded-lg border border-slate-200 p-5">
-          <h2 class="text-xl font-semibold">Distribution</h2>
-          <ul class="mt-3 list-disc space-y-2 pl-6 text-slate-700">
-            <li>GitHub release updater.</li>
-            <li>Windows installer.</li>
-            <li>Published npm packages.</li>
-            <li>Extension marketplace release.</li>
-            <li>Versioned local docs.</li>
-          </ul>
+          <h2 class="text-xl font-semibold">Plugin Marketplace</h2>
+          <p class="mt-3 text-slate-600">A future plugin ecosystem for framework, database, Discord, compiler, and language plugins without bloating the core runtime.</p>
+          <a class="mt-4 inline-flex text-sm font-semibold text-pink-700" href="plugins.html">Read Plugin docs</a>
         </div>
       </section>
 
@@ -79,29 +59,25 @@
           </div>
           <div class="rounded-lg border border-slate-200 p-5">
             <h3 class="font-semibold">Discord Knowledge in the Tooling</h3>
-            <p class="mt-2 text-slate-600">Tsundere should know Discord limits before runtime: embed sizes, modal inputs, button rows, required intents, permissions, option types, and stale command state.</p>
+            <p class="mt-2 text-slate-600">Tsundere should know Discord limits before runtime: embed sizes, modal inputs, button rows, required intents, permissions, option types, stale command state, and deprecated APIs.</p>
           </div>
           <div class="rounded-lg border border-slate-200 p-5">
-            <h3 class="font-semibold">Typed Interactions Without Lock-In</h3>
-            <p class="mt-2 text-slate-600">The goal is typed buttons, selects, modals, routes, and command options while still letting developers own the actual bot logic.</p>
+            <h3 class="font-semibold">Commercial-Grade Builds</h3>
+            <p class="mt-2 text-slate-600">Protected builds should be randomized, fingerprinted, and traceable. The goal is accountability and friction against casual reverse engineering, not impossible security promises.</p>
           </div>
           <div class="rounded-lg border border-slate-200 p-5">
             <h3 class="font-semibold">A Runtime That Feels Real</h3>
-            <p class="mt-2 text-slate-600">Build, start, dev, docs, package updates, version checks, command sync, and diagnostics should all live behind one clean CLI.</p>
+            <p class="mt-2 text-slate-600">Build, start, dev, docs, package updates, version checks, command sync, doctor reports, and diagnostics should all live behind one clean CLI.</p>
           </div>
         </div>
       </section>
 
       <section class="mt-10 rounded-lg border border-pink-200 bg-pink-50 p-5">
         <h2 class="text-2xl font-semibold text-pink-900">Got an idea?</h2>
-        <p class="mt-3 text-pink-900">If you have a feature idea, Discord workflow pain point, docs request, or weird bot use case Tsundere should support, join the Discord and throw it in.</p>
+        <p class="mt-3 text-pink-900">If you have a feature idea, Discord workflow pain point, docs request, protection idea, or weird bot use case Tsundere should support, join the Discord and throw it in.</p>
         <a class="mt-4 inline-flex rounded-md bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-700" href="https://discord.gg/Gpxj5xVXBZ">Join the Discord</a>
-      </section>
-        </div>
       </section>
     </main>
   </div>
 </body>
 </html>
-
-

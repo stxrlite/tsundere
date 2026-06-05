@@ -1,19 +1,20 @@
 #!/usr/bin/env node
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn } from "node:child_process";
+import type { ProtectProfile } from "./types.js";
 import { loadConfig, validateConfig } from "./config.js";
 import { buildProject, devProject, runBuiltProject } from "./compiler/project.js";
 import { walk } from "./fs.js";
 import { cleanDiscordTypes, doctorDiscordTypes, inspectDiscordType, syncDiscordTypes } from "./type-bridge/cache.js";
 import { writeCommandManifest } from "./commands/discovery.js";
 import { cleanStore, optimizedNpmInstall, optimizerDoctor, pruneStore, readStorePath } from "./package-optimizer.js";
+import { commandExists, currentPlatform, ensureExecutable, ensureTsunderePaths, openFileCommand, platformExecutable, platformLabel, runCommand, runtimeChecks, tsunderePaths } from "./platform/index.js";
 
 const [, , command = "help", ...args] = process.argv;
 const cliRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const DEFAULT_GITHUB_REPO = "tsundere-dev/tsundere";
+const DEFAULT_GITHUB_REPO = "TsundereLang/tsundere";
 
 try {
   const code = await run(command, args);
@@ -48,7 +49,7 @@ async function run(command: string, args: string[]): Promise<number> {
     case "dev":
       return dev();
     case "build":
-      return build();
+      return build(args);
     case "start":
       return start();
     case "format":
@@ -69,6 +70,8 @@ async function run(command: string, args: string[]): Promise<number> {
       return runtime(args);
     case "commands":
       return commands(args);
+    case "fingerprint":
+      return fingerprint(args);
     case "help":
     default:
       printHelp();
@@ -180,9 +183,9 @@ async function dev(): Promise<number> {
   return devProject(config);
 }
 
-async function build(): Promise<number> {
+async function build(args: string[] = []): Promise<number> {
   const config = await loadConfig();
-  return buildProject(config);
+  return buildProject(config, process.cwd(), { protect: readProtectOptions(args) });
 }
 
 async function start(): Promise<number> {
@@ -236,6 +239,22 @@ async function doctor(): Promise<number> {
   console.log(`  output: ${config.outDir}`);
   console.log(`  target: ${config.target}`);
   console.log(`  strict: ${config.strict ? "on" : "off"}`);
+  console.log(`  platform: ${platformLabel()}`);
+  const paths = tsunderePaths();
+  await ensureTsunderePaths(paths);
+  console.log(`  tsundere home: ${paths.root}`);
+  console.log(`  config: ${paths.config}`);
+  console.log(`  cache: ${paths.cache}`);
+  console.log(`  logs: ${paths.logs}`);
+  for (const check of await runtimeChecks()) {
+    const name = check.name === "node" ? `Tsundere Runtime ${packageVersion()}` : check.name;
+    console.log(`  ${name}: ${check.available ? "available" : "missing"} (${check.command})`);
+  }
+  if (currentPlatform() === "linux") {
+    console.log("  linux shell: sh-compatible command lookup enabled");
+    await ensureLinuxExecutables();
+    console.log("  linux permissions: executable scripts checked");
+  }
   const packageDoctor = await optimizerDoctor(config);
   for (const line of packageDoctor.lines) {
     console.log(line);
@@ -270,6 +289,18 @@ async function cache(args: string[]): Promise<number> {
   console.log(`Tch... cache cleaned at ${result.storePath}`);
   console.log(`Freed ${formatBytes(result.removedBytes)} from the Tsundere store.`);
   return 0;
+}
+
+async function ensureLinuxExecutables(): Promise<void> {
+  const candidates = [
+    resolve(cliRoot, "dist", "cli.js"),
+    resolve(cliRoot, "scripts", "install-linux.sh")
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      await ensureExecutable(candidate, "linux");
+    }
+  }
 }
 
 async function test(args: string[]): Promise<number> {
@@ -329,11 +360,12 @@ async function generate(args: string[]): Promise<number> {
 async function plugin(args: string[]): Promise<number> {
   const action = args[0];
   const name = args[1];
-  if (action !== "add" || !name) {
-    throw new Error("Usage: tsundere plugin add <name>");
+  if ((action !== "add" && action !== "install") || !name) {
+    throw new Error("Usage: tsundere plugin add|install <name-or-git-url>");
   }
-  const packageName = name.startsWith("@") ? name : `@tsundere/plugin-${name}`;
-  return pnpm(["add", "-D", packageName]);
+  const config = await loadConfig();
+  const packageName = pluginPackageName(name);
+  return optimizedNpmInstall(["install", "-D", packageName], { config });
 }
 
 async function types(args: string[]): Promise<number> {
@@ -375,23 +407,57 @@ async function types(args: string[]): Promise<number> {
   }
 }
 
+async function fingerprint(args: string[]): Promise<number> {
+  const action = args[0] ?? "inspect";
+  if (action !== "inspect") {
+    throw new Error("Usage: tsundere fingerprint inspect [file-or-directory]");
+  }
+  const target = resolve(process.cwd(), args[1] ?? ".tsundere/runtime-build");
+  if (!existsSync(target)) {
+    throw new Error(`Fingerprint target not found: ${target}`);
+  }
+  const targetStats = statSync(target);
+  const metadataPath = targetStats.isDirectory() ? resolve(target, "tsundere-protect.json") : "";
+  if (existsSync(metadataPath)) {
+    const metadata = JSON.parse(readFileSyncText(metadataPath)) as {
+      profile?: string;
+      files?: Array<{ file: string; buildId: string; profile: string }>;
+    };
+    console.log("Tsundere Fingerprint Report");
+    console.log(`  profile: ${metadata.profile ?? "unknown"}`);
+    for (const file of metadata.files ?? []) {
+      console.log(`  ${file.file}: ${file.buildId} (${file.profile})`);
+    }
+    return 0;
+  }
+  if (targetStats.isDirectory()) {
+    console.log("No Tsundere fingerprint metadata found in this directory.");
+    return 1;
+  }
+  const source = readFileSyncText(target);
+  const matches = [...source.matchAll(/[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}/gu)].map((match) => match[0]);
+  if (matches.length === 0) {
+    console.log("No Tsundere fingerprint detected.");
+    return 1;
+  }
+  console.log("Tsundere Fingerprint Report");
+  for (const match of new Set(matches)) {
+    console.log(`  build: ${match}`);
+  }
+  return 0;
+}
+
 async function pnpm(args: string[], options: { quiet?: boolean } = {}): Promise<number> {
   const packageArgs = withWorkspaceRootFlag(mapBundledPackages(args));
-  if (await commandExists(process.platform === "win32" ? "pnpm.cmd" : "pnpm")) {
-    return runCommand(process.platform === "win32" ? "pnpm.cmd" : "pnpm", packageArgs, options);
+  if (await commandExists("pnpm")) {
+    return runCommand(platformExecutable("pnpm"), packageArgs, options);
   }
 
   if (!options.quiet) {
     console.warn("pnpm was not found. Falling back to npm for this command.");
     console.warn("For the intended Tsundere package workflow, install pnpm with: npm install -g pnpm");
   }
-  return runCommand(process.platform === "win32" ? "npm.cmd" : "npm", npmFallbackArgs(packageArgs), options);
-}
-
-async function commandExists(command: string): Promise<boolean> {
-  const checker = process.platform === "win32" ? "where.exe" : "sh";
-  const args = process.platform === "win32" ? [command] : ["-c", `command -v ${command}`];
-  return (await runCommand(checker, args, { quiet: true })) === 0;
+  return runCommand(platformExecutable("npm"), npmFallbackArgs(packageArgs), options);
 }
 
 function npmFallbackArgs(args: string[]): string[] {
@@ -415,30 +481,9 @@ function npmFallbackArgs(args: string[]): string[] {
   }
 }
 
-async function runCommand(command: string, args: string[], options: { quiet?: boolean } = {}): Promise<number> {
-  return new Promise((resolveCode) => {
-    const executable = process.platform === "win32" && command.endsWith(".cmd") ? "cmd.exe" : command;
-    const commandArgs = process.platform === "win32" && command.endsWith(".cmd")
-      ? ["/d", "/s", "/c", command, ...args]
-      : args;
-    const child = spawn(executable, commandArgs, {
-      cwd: process.cwd(),
-      stdio: options.quiet ? "ignore" : "inherit",
-      shell: false
-    });
-    child.on("error", () => resolveCode(1));
-    child.on("close", (code) => resolveCode(code ?? 1));
-  });
-}
-
 async function openFile(path: string): Promise<number> {
-  if (process.platform === "win32") {
-    return runCommand("cmd.exe", ["/c", "start", "", path]);
-  }
-  if (process.platform === "darwin") {
-    return runCommand("open", [path]);
-  }
-  return runCommand("xdg-open", [path]);
+  const command = openFileCommand(path);
+  return runCommand(command.command, command.args);
 }
 
 function mapBundledPackages(args: string[]): string[] {
@@ -467,12 +512,13 @@ function withWorkspaceRootFlag(args: string[]): string[] {
 
 function printHelp(): void {
   console.log(`Tsundere ${packageVersion()}
-TypeScript-style .yuri tooling for Discord bots.
+Clean .yuri tooling for Discord bots.
 
 Usage:
   tsundere create <name> --template discord
   tsundere dev
   tsundere build
+  tsundere build --protect standard
   tsundere start
   tsundere add <package>
   tsundere remove <package>
@@ -491,12 +537,14 @@ Usage:
   tsundere generate types
   tsundere generate api|route|service|command|model --name <name>
   tsundere plugin add <name>
+  tsundere plugin install <name-or-git-url>
   tsundere types sync
   tsundere types inspect <Symbol>
   tsundere types clean
   tsundere types doctor
   tsundere runtime install
   tsundere commands sync
+  tsundere fingerprint inspect
 `);
 }
 
@@ -582,6 +630,41 @@ function readFlag(args: string[], flag: string): string | undefined {
   return index >= 0 ? args[index + 1] : undefined;
 }
 
+function readProtectOptions(args: string[]): { profile: ProtectProfile; seed?: string | undefined } | undefined {
+  const index = args.indexOf("--protect");
+  if (index < 0) {
+    return undefined;
+  }
+  const candidate = args[index + 1];
+  const profile = isProtectProfile(candidate) ? candidate : "standard";
+  const seed = readFlag(args, "--seed");
+  return { profile, seed };
+}
+
+function isProtectProfile(value: string | undefined): value is ProtectProfile {
+  return value === "standard" || value === "advanced" || value === "maximum";
+}
+
+function pluginPackageName(value: string): string {
+  if (
+    value.startsWith("@") ||
+    value.startsWith("file:") ||
+    value.startsWith("git+") ||
+    value.startsWith("github:") ||
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.includes("\\") ||
+    value.startsWith(".") ||
+    value.startsWith("/")
+  ) {
+    return value;
+  }
+  if (/^[\w.-]+\/[\w.-]+(?:#.+)?$/u.test(value)) {
+    return `github:${value}`;
+  }
+  return `@tsundere/plugin-${value}`;
+}
+
 function templateFiles(name: string, template: string): Map<string, string> {
   const common = new Map<string, string>([
     ["package.json", `${JSON.stringify({
@@ -648,7 +731,10 @@ async function installBundledDiscordRuntime(projectRoot: string): Promise<void> 
     version: "0.1.0",
     type: "module",
     exports: { ".": "./dist/index.js" },
-    types: "./dist/index.d.ts"
+    types: "./dist/index.d.ts",
+    dependencies: {
+      "discord.js": "^14.26.4"
+    }
   }, null, 2)}\n`, "utf8");
 }
 

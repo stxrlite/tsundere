@@ -79,29 +79,74 @@ function addDiscordDiagnostics(source: string, filename: string, diagnostics: Di
     }
   }
 
-  if (/\.on\(\s*["']messageCreate["']/u.test(source) && !/MessageContent/u.test(source)) {
-    const position = positionOf(source, source.search(/messageCreate/u));
-    diagnostics.push({
-      code: "DISCORD002",
-      message: "messageCreate handlers that read message content usually require the MessageContent intent.",
-      filename,
-      line: position.line,
-      column: position.column,
-      severity: "warning",
-      hint: "Add Intents.MessageContent when reading message.content."
-    });
-  }
+  addIntentDiagnostics(source, filename, diagnostics);
+  addPermissionDiagnostics(source, filename, diagnostics);
+}
 
-  if (/\.ban\(/u.test(source)) {
-    const position = positionOf(source, source.search(/\.ban\(/u));
+function addIntentDiagnostics(source: string, filename: string, diagnostics: Diagnostic[]): void {
+  const rules = [
+    { event: "messageCreate", required: "GuildMessages", maybe: "MessageContent", hint: "Add Intents.GuildMessages. Add Intents.MessageContent when reading message.content." },
+    { event: "messageUpdate", required: "GuildMessages", hint: "Add Intents.GuildMessages for message update events." },
+    { event: "messageDelete", required: "GuildMessages", hint: "Add Intents.GuildMessages for message delete events." },
+    { event: "guildMemberAdd", required: "GuildMembers", hint: "Add Intents.GuildMembers and enable the privileged Server Members intent when needed." },
+    { event: "guildMemberRemove", required: "GuildMembers", hint: "Add Intents.GuildMembers and enable the privileged Server Members intent when needed." },
+    { event: "presenceUpdate", required: "GuildPresences", hint: "Add Intents.GuildPresences and enable the privileged Presence intent when needed." },
+    { event: "voiceStateUpdate", required: "GuildVoiceStates", hint: "Add Intents.GuildVoiceStates for voice state tracking." }
+  ];
+  for (const rule of rules) {
+    const pattern = new RegExp(`\\.on\\(\\s*["']${rule.event}["']`, "u");
+    if (!pattern.test(source)) {
+      continue;
+    }
+    const position = positionOf(source, source.search(new RegExp(rule.event, "u")));
+    if (!new RegExp(`\\b${rule.required}\\b`, "u").test(source)) {
+      diagnostics.push({
+        code: "DISCORD002",
+        message: `${rule.event} requires the ${rule.required} intent.`,
+        filename,
+        line: position.line,
+        column: position.column,
+        severity: "warning",
+        hint: rule.hint
+      });
+    }
+    if (rule.maybe && /\bmessage\.content\b|\bmsg\.content\b/u.test(source) && !new RegExp(`\\b${rule.maybe}\\b`, "u").test(source)) {
+      diagnostics.push({
+        code: "DISCORD003",
+        message: `${rule.event} code reads message content and may require the ${rule.maybe} intent.`,
+        filename,
+        line: position.line,
+        column: position.column,
+        severity: "warning",
+        hint: rule.hint
+      });
+    }
+  }
+}
+
+function addPermissionDiagnostics(source: string, filename: string, diagnostics: Diagnostic[]): void {
+  const rules = [
+    { pattern: /\.ban\(/u, permission: "BanMembers", message: "Ban operations may require the BanMembers permission.", hint: "Check bot role hierarchy and BanMembers permission." },
+    { pattern: /\.timeout\(/u, permission: "ModerateMembers", message: "Timeout operations may require the ModerateMembers permission.", hint: "Check bot role hierarchy and ModerateMembers permission." },
+    { pattern: /\.kick\(/u, permission: "KickMembers", message: "Kick operations may require the KickMembers permission.", hint: "Check bot role hierarchy and KickMembers permission." },
+    { pattern: /\.channels\.create\(|\.createChannel\(/u, permission: "ManageChannels", message: "Channel creation may require the ManageChannels permission.", hint: "Add ManageChannels to the bot invite when creating channels." },
+    { pattern: /\.roles\.create\(|\.setRole|\baddRole\(/u, permission: "ManageRoles", message: "Role operations may require the ManageRoles permission.", hint: "Check role hierarchy and ManageRoles permission." },
+    { pattern: /\.fetchAuditLogs\(/u, permission: "ViewAuditLog", message: "Audit log reads may require the ViewAuditLog permission.", hint: "Add ViewAuditLog when reading guild audit logs." }
+  ];
+  for (const rule of rules) {
+    const index = source.search(rule.pattern);
+    if (index < 0) {
+      continue;
+    }
+    const position = positionOf(source, index);
     diagnostics.push({
       code: "DISCORD020",
-      message: "Ban operations may require the BanMembers permission.",
+      message: rule.message,
       filename,
       line: position.line,
       column: position.column,
       severity: "warning",
-      hint: "Check bot role hierarchy and BanMembers permission."
+      hint: `${rule.hint} Required permission: ${rule.permission}.`
     });
   }
 }
@@ -330,7 +375,9 @@ function lowerNativeEmbeds(source: string): string {
 }
 
 function lowerNativeObjectCalls(source: string): string {
-  return replaceCallBlocks(source, /((?:await\s+)?[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+)\s*\{/gu, (callee, body) => {
+  return replaceBlocks(source, /^(\s*)((?:await\s+)?[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+)\s*\{/gmu, (match, body) => {
+    const indent = match[1] ?? "";
+    const callee = (match[2] ?? "").trim();
     const properties = body
       .split(/\r?\n/u)
       .map((line) => line.trim())
@@ -345,7 +392,7 @@ function lowerNativeObjectCalls(source: string): string {
         return `${name}: ${value.trim()},`;
       })
       .join("\n  ");
-    return `${callee}({\n  ${properties}\n})`;
+    return `${indent}${callee}({\n  ${properties}\n${indent}})`;
   });
 }
 

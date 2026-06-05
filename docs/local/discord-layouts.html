@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Discord Layouts - Tsundere Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body class="bg-white text-slate-900">
+  <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <aside class="border-r border-slate-200 bg-slate-50 px-6 py-6 lg:sticky lg:top-0 lg:h-screen">
+      <div class="flex items-center gap-3">
+        <img src="../../assets/tsundere-logo.png" alt="Tsundere logo" class="h-12 w-12 rounded-lg object-cover">
+        <div><div class="text-lg font-semibold">Tsundere</div><div class="text-xs text-slate-500">Local Documentation</div></div>
+      </div>
+      <nav class="mt-8 space-y-1 text-sm">
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="index.html">Overview</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="getting-started.html">Getting Started</a>
+        <a class="block rounded-md bg-pink-100 px-3 py-2 font-medium text-pink-800" href="discord.html">Discord Guide</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="cli.html">CLI and Runtime</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="updates.html">Updates</a>
+      </nav>
+    </aside>
+    <main class="mx-auto w-full max-w-5xl px-6 py-10">
+      <h1 class="text-4xl font-bold tracking-tight">Discord Layouts</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">Tsundere keeps familiar JavaScript-shaped expressions, but Discord projects are organized around clean files, command discovery, typed builders, and interaction helpers. You do not need a giant manual command loader.</p>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Recommended Project Layout</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>src/
+  main.yuri
+  events/
+    ready.yuri
+    interactionCreate.yuri
+    guildMemberAdd.yuri
+  commands/
+    ping.yuri
+    avatar.yuri
+    admin/
+      ban.yuri
+  components/
+    confirmButton.yuri
+  modals/
+    reportModal.yuri
+  services/
+    users.yuri
+    github.yuri</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Main File</h2>
+        <p class="mt-3 text-slate-600">Keep `main.yuri` small. Create the client, register shared event handlers, then login.</p>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>import { Client, Intents } from "@tsundere/discord"
+import { registerReadyEvent } from "./events/ready"
+import { registerInteractionEvents } from "./events/interactionCreate"
+
+const client = new Client({
+  token: env.DISCORD_TOKEN,
+  intents: [
+    Intents.Guilds,
+    Intents.GuildMembers,
+    Intents.GuildMessages,
+    Intents.MessageContent
+  ]
+})
+
+registerReadyEvent(client)
+registerInteractionEvents(client)
+
+client.login()</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Event Files</h2>
+        <p class="mt-3 text-slate-600">Events are normal code. YuriLS should autocomplete event names, callback params, required intents, and common mistakes.</p>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>export function registerReadyEvent(client) {
+  client.once("ready", () => {
+    log(`Online as ${client.user.tag}`)
+  })
+}</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Command Files</h2>
+        <p class="mt-3 text-slate-600">Command files export command definitions. `tsundere dev` and `tsundere commands sync` discover them from `src/commands`.</p>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>import { Slash } from "@tsundere/discord"
+
+export default Slash.command("avatar")
+  .description("Show a user's avatar")
+  .option("user", "target", "User to inspect", { required: false })</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Route-Based Commands</h2>
+        <p class="mt-3 text-slate-600">Route-based commands are configurable. You can make folders become command groups, or disable that and use names from each command file.</p>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>{
+  "commands": {
+    "discovery": true,
+    "routeBased": false,
+    "directory": "./src/commands",
+    "groups": {
+      "./src/commands/admin": {
+        "routeBased": true,
+        "groupName": "admin"
+      }
+    }
+  }
+}</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Interaction Router Style</h2>
+        <p class="mt-3 text-slate-600">You can still use raw `interactionCreate`, but larger bots should route commands, components, modals, and selects into separate handlers.</p>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>client.on("interactionCreate", async (interaction) => {
+  if interaction.isCommand("ping") {
+    await pingHandler(interaction)
+  }
+
+  if interaction.isButton("confirm") {
+    await confirmHandler(interaction)
+  }
+
+  if interaction.isModal("report") {
+    await reportHandler(interaction)
+  }
+})</code></pre>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

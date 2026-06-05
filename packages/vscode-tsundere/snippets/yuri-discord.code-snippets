@@ -71,5 +71,102 @@
       ")"
     ],
     "description": "Create a Discord component row."
+  },
+  "Command File": {
+    "prefix": "ts-command-file",
+    "body": [
+      "import { Slash } from \"@tsundere/discord\"",
+      "",
+      "export default Slash.command(\"${1:ping}\")",
+      "  .description(\"${2:Reply with pong}\")"
+    ],
+    "description": "Create a discoverable command file."
+  },
+  "Discord Layout Main": {
+    "prefix": "ts-layout-main",
+    "body": [
+      "import { Client, Intents } from \"@tsundere/discord\"",
+      "import { registerReadyEvent } from \"./events/ready\"",
+      "import { registerInteractionEvents } from \"./events/interactionCreate\"",
+      "",
+      "const client = new Client({",
+      "  token: env.DISCORD_TOKEN,",
+      "  intents: [",
+      "    Intents.Guilds,",
+      "    Intents.GuildMembers,",
+      "    Intents.GuildMessages,",
+      "    Intents.MessageContent",
+      "  ]",
+      "})",
+      "",
+      "registerReadyEvent(client)",
+      "registerInteractionEvents(client)",
+      "",
+      "client.login()"
+    ],
+    "description": "Create a layout-friendly Tsundere Discord main file."
+  },
+  "Typed Component": {
+    "prefix": "ts-component-typed",
+    "body": [
+      "const ${1:ConfirmButton} = Component.define<{",
+      "  ${2:userId}: string",
+      "}>(\"${3:confirm}\")",
+      "",
+      "client.component(${1:ConfirmButton}, async (ctx) => {",
+      "  const ${2:userId} = ctx.data.${2:userId}",
+      "  ${0}",
+      "})"
+    ],
+    "description": "Create a typed component definition and handler."
+  },
+  "Typed Modal": {
+    "prefix": "ts-modal-typed",
+    "body": [
+      "const ${1:ReportModal} = Modal.define({",
+      "  ${2:reason}: String,",
+      "  ${3:proof}: String",
+      "})",
+      "",
+      "client.modal(${1:ReportModal}, async (ctx) => {",
+      "  const ${2:reason} = ctx.data.${2:reason}",
+      "  ${0}",
+      "})"
+    ],
+    "description": "Create a typed modal definition and handler."
+  },
+  "GitHub Link Command": {
+    "prefix": "ts-github-link",
+    "body": [
+      "if interaction.isCommand(\"link\") {",
+      "  const url = `${env.PUBLIC_URL}/auth/github?discordId=${interaction.user.id}`",
+      "",
+      "  await interaction.reply({",
+      "    content: \"Link your GitHub account: \" + url,",
+      "    ephemeral: true",
+      "  })",
+      "}"
+    ],
+    "description": "Create a GitHub account linking interaction."
+  },
+  "Components V2 Container": {
+    "prefix": "ts-components-v2",
+    "body": [
+      "const layout = Components.container()",
+      "  .accentColor(\"#ff7ab6\")",
+      "  .add(",
+      "    Components.text(\"${1:Thanks for contributing to Tsundere}\"),",
+      "    Components.separator().spacing(\"large\"),",
+      "    Components.section()",
+      "      .content(\"${2:Open the docs or link GitHub to get contributor roles.}\")",
+      "      .accessory(Button.link(\"${3:https://tsundere.dev}\").label(\"Open Docs\"))",
+      "  )",
+      "",
+      "await interaction.reply({",
+      "  components: [layout.toJSON()],",
+      "  ephemeral: true",
+      "})"
+    ],
+    "description": "Create a newer Discord component layout."
   }
 }

@@ -1,21 +1,28 @@
 import { existsSync, readFileSync, watch } from "node:fs";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { spawn, type ChildProcess } from "node:child_process";
 import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import ts from "typescript";
-import type { TsundereConfig } from "../types.js";
+import type { ProtectProfile, TsundereConfig } from "../types.js";
 import { compileYuri } from "./transpile.js";
 import { formatDiagnostic } from "./diagnostics.js";
 import { walk } from "../fs.js";
+import { protectJavaScript } from "./protect.js";
 
 interface BuildOptions {
   emitRuntime?: boolean;
+  protect?: {
+    profile: ProtectProfile;
+    seed?: string | undefined;
+  } | undefined;
 }
 
 export async function buildProject(config: TsundereConfig, cwd = process.cwd(), options: BuildOptions = {}): Promise<number> {
   const sourceRoot = resolve(cwd, config.source);
   const outRoot = resolve(cwd, config.outDir);
   const files = await walk(sourceRoot, ".yuri");
+  const diagnosticOptions = diagnosticFormatOptions(config);
   let errors = 0;
 
   for (const file of files) {
@@ -32,7 +39,10 @@ export async function buildProject(config: TsundereConfig, cwd = process.cwd(), 
     });
 
     for (const diagnostic of result.diagnostics) {
-      console.error(formatDiagnostic(diagnostic));
+      if (shouldSkipDiagnostic(diagnostic, config)) {
+        continue;
+      }
+      console.error(formatDiagnostic(diagnostic, diagnosticOptions));
       if (diagnostic.severity === "error") {
         errors += 1;
       }
@@ -53,7 +63,8 @@ export async function buildProject(config: TsundereConfig, cwd = process.cwd(), 
     return 1;
   }
   if (options.emitRuntime ?? true) {
-    await emitNodeRuntime(config, cwd);
+    await refreshBundledDiscordRuntime(cwd);
+    await emitNodeRuntime(config, cwd, options);
   }
   return 0;
 }
@@ -102,20 +113,44 @@ export async function devProject(config: TsundereConfig, cwd = process.cwd()): P
   const sourceRoot = resolve(cwd, config.source);
   console.log(`Tsundere dev is watching ${sourceRoot}`);
 
-  const watcher = watch(sourceRoot, { recursive: true }, (_event, filename) => {
-    if (!filename || !filename.endsWith(".yuri")) {
-      return;
-    }
+  const scheduleRebuild = (): void => {
     if (timer) {
       clearTimeout(timer);
     }
     timer = setTimeout(() => {
       void rebuild();
     }, 100);
-  });
+  };
+
+  let snapshot = await sourceSnapshot(sourceRoot);
+  let watcher: ReturnType<typeof watch> | undefined;
+  try {
+    watcher = watch(sourceRoot, { recursive: true }, (_event, filename) => {
+      if (!filename || !filename.endsWith(".yuri")) {
+        return;
+      }
+      void sourceSnapshot(sourceRoot).then((next) => {
+        snapshot = next;
+      });
+      scheduleRebuild();
+    });
+  } catch {
+    watcher = undefined;
+  }
+  const poller = setInterval(() => {
+    void sourceSnapshot(sourceRoot).then((next) => {
+      if (!sameSnapshot(snapshot, next)) {
+        snapshot = next;
+        scheduleRebuild();
+      }
+    });
+  }, 750);
+  const keepAlive = setInterval(() => undefined, 2147483647);
 
   const stop = (): void => {
-    watcher.close();
+    clearInterval(keepAlive);
+    clearInterval(poller);
+    watcher?.close();
     if (child) {
       child.kill();
     }
@@ -137,16 +172,17 @@ export async function runBuiltProject(config: TsundereConfig, cwd = process.cwd(
   return waitForProcess(spawnNode(entry, cwd));
 }
 
-async function emitNodeRuntime(config: TsundereConfig, cwd: string): Promise<void> {
+async function emitNodeRuntime(config: TsundereConfig, cwd: string, options: BuildOptions = {}): Promise<void> {
   const outRoot = resolve(cwd, config.outDir);
   const runtimeRoot = resolve(cwd, ".tsundere", "runtime-build");
   const files = await walk(outRoot, config.target === "typescript" ? ".ts" : ".js");
   await rm(runtimeRoot, { recursive: true, force: true });
+  const protectedBuilds: Array<{ file: string; buildId: string; profile: ProtectProfile }> = [];
   for (const file of files) {
     const source = await readFile(file, "utf8");
     const relativePath = relative(outRoot, file);
     const outputFile = join(runtimeRoot, relativePath.replace(/\.(ts|js)$/u, ".js"));
-    const output = config.target === "typescript"
+    let output = config.target === "typescript"
       ? ts.transpileModule(source, {
         compilerOptions: {
           module: ts.ModuleKind.ES2022,
@@ -158,9 +194,106 @@ async function emitNodeRuntime(config: TsundereConfig, cwd: string): Promise<voi
         fileName: file
       }).outputText
       : source;
+    output = addNodeImportExtensions(output);
+    if (options.protect) {
+      const result = protectJavaScript(output, options.protect);
+      output = result.code;
+      protectedBuilds.push({ file: relativePath.replace(/\.(ts|js)$/u, ".js"), buildId: result.buildId, profile: options.protect.profile });
+    }
     await mkdir(dirname(outputFile), { recursive: true });
     await writeFile(outputFile, output, "utf8");
   }
+  if (options.protect) {
+    await writeFile(resolve(runtimeRoot, "tsundere-protect.json"), `${JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      profile: options.protect.profile,
+      seed: options.protect.seed ?? "auto",
+      files: protectedBuilds
+    }, null, 2)}\n`, "utf8");
+    const ids = protectedBuilds.map((build) => build.buildId).join(", ");
+    console.log(`Tsundere Protect ${options.protect.profile}: ${ids || "no runtime files"}`);
+  }
+}
+
+async function refreshBundledDiscordRuntime(cwd: string): Promise<void> {
+  const cliDistRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  const sourceDist = resolve(cliDistRoot, "discord");
+  if (!existsSync(sourceDist)) {
+    return;
+  }
+  const targetRoot = resolve(cwd, ".tsundere", "runtime", "discord");
+  const targetDist = resolve(targetRoot, "dist");
+  await rm(targetDist, { recursive: true, force: true });
+  await mkdir(targetRoot, { recursive: true });
+  await cp(sourceDist, targetDist, { recursive: true, force: true });
+  await writeFile(resolve(targetRoot, "package.json"), `${JSON.stringify({
+    name: "@tsundere/discord",
+    version: "0.1.0",
+    type: "module",
+    exports: { ".": "./dist/index.js" },
+    types: "./dist/index.d.ts",
+    dependencies: {
+      "discord.js": "^14.26.4"
+    }
+  }, null, 2)}\n`, "utf8");
+}
+
+async function sourceSnapshot(sourceRoot: string): Promise<Map<string, number>> {
+  const files = await walk(sourceRoot, ".yuri");
+  const snapshot = new Map<string, number>();
+  await Promise.all(files.map(async (file) => {
+    const info = await stat(file);
+    snapshot.set(file, info.mtimeMs);
+  }));
+  return snapshot;
+}
+
+function sameSnapshot(left: Map<string, number>, right: Map<string, number>): boolean {
+  if (left.size !== right.size) {
+    return false;
+  }
+  for (const [file, mtime] of left) {
+    if (right.get(file) !== mtime) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function shouldSkipDiagnostic(diagnostic: { code: string; severity: "error" | "warning" }, config: TsundereConfig): boolean {
+  const disabled = new Set(config.diagnostics?.disabled ?? []);
+  if (disabled.has(diagnostic.code)) {
+    return true;
+  }
+  return diagnostic.severity === "warning" && config.diagnostics?.warnings === false;
+}
+
+function diagnosticFormatOptions(config: TsundereConfig): { color: boolean; verbose: boolean } {
+  const color = config.diagnostics?.color ?? (Boolean(process.stderr.isTTY) && !process.env.NO_COLOR);
+  return {
+    color,
+    verbose: config.diagnostics?.verbose ?? false
+  };
+}
+
+function addNodeImportExtensions(source: string): string {
+  return source
+    .replace(/(\bfrom\s*["'])(\.{1,2}\/[^"']+)(["'])/gu, (_match, prefix: string, specifier: string, suffix: string) => `${prefix}${withJsExtension(specifier)}${suffix}`)
+    .replace(/(\bimport\s*["'])(\.{1,2}\/[^"']+)(["'])/gu, (_match, prefix: string, specifier: string, suffix: string) => `${prefix}${withJsExtension(specifier)}${suffix}`)
+    .replace(/(\bimport\s*\(\s*["'])(\.{1,2}\/[^"']+)(["']\s*\))/gu, (_match, prefix: string, specifier: string, suffix: string) => `${prefix}${withJsExtension(specifier)}${suffix}`);
+}
+
+function withJsExtension(specifier: string): string {
+  const hashIndex = specifier.indexOf("#");
+  const beforeHash = hashIndex >= 0 ? specifier.slice(0, hashIndex) : specifier;
+  const hash = hashIndex >= 0 ? specifier.slice(hashIndex) : "";
+  const queryIndex = beforeHash.indexOf("?");
+  const pathOnly = queryIndex >= 0 ? beforeHash.slice(0, queryIndex) : beforeHash;
+  const query = queryIndex >= 0 ? beforeHash.slice(queryIndex) : "";
+  if (/\.(?:cjs|mjs|js|json|node)$/iu.test(pathOnly)) {
+    return specifier;
+  }
+  return `${pathOnly}.js${query}${hash}`;
 }
 
 function runtimeEntry(config: TsundereConfig, cwd: string): string {

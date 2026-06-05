@@ -93,7 +93,39 @@ const embedCompletions = [
   method("validate", "validate() -> EmbedValidationResult", "Validate Discord embed limits.", "validate()")
 ];
 
-const autoImports = ["Client", "Intents", "Embed", "Button", "ActionRow", "Row", "Modal", "Slash", "Permissions", "GatewayIntentBits", "Partials", "SelectMenu", "TextInput"];
+const routerCompletions = [
+  method("command", "command(name: String, handler: CommandHandler) -> Router", "Route a slash command interaction.", "command(\"$1\", async (ctx) => {\n  $0\n})"),
+  method("button", "button(component: ComponentDefinition, handler: ButtonHandler) -> Router", "Route a typed button interaction.", "button($1, async (ctx) => {\n  $0\n})"),
+  method("modal", "modal(modal: ModalDefinition, handler: ModalHandler) -> Router", "Route a typed modal submit.", "modal($1, async (ctx) => {\n  $0\n})"),
+  method("select", "select(select: SelectDefinition, handler: SelectHandler) -> Router", "Route a typed select interaction.", "select($1, async (ctx) => {\n  $0\n})")
+];
+
+const componentCompletions = [
+  method("define", "define<TData>(namespace: String) -> ComponentDefinition<TData>", "Define a typed component custom ID schema.", "define<{\n  ${1:id}: string\n}>(\"${2:namespace}\")"),
+  method("create", "create(data: TData) -> String", "Serialize typed component data into a custom ID.", "create({ ${1:id}: ${2:value} })")
+];
+
+const modalCompletions = [
+  method("define", "define(schema: ModalSchema) -> ModalDefinition", "Define a typed modal schema.", "define({\n  ${1:reason}: String\n})"),
+  method("textInput", "textInput(name: String, options: TextInputOptions) -> TextInput", "Create a typed modal text input.", "textInput(\"$1\", { label: \"$2\" })")
+];
+
+const selectCompletions = [
+  method("define", "define(options: SelectDefinitionOptions) -> SelectDefinition", "Define a typed select menu.", "define({\n  values: [\"${1:Option}\"]\n})"),
+  method("option", "option(label: String, value: String) -> SelectOption", "Create a select option.", "option(\"$1\", \"$2\")")
+];
+
+const componentsV2Completions = [
+  method("text", "text(content: String) -> TextDisplay", "Create a Discord Components v2 text display.", "text(\"$1\")"),
+  method("section", "section() -> Section", "Create a section layout component.", "section()"),
+  method("thumbnail", "thumbnail(url: String) -> ThumbnailComponent", "Create a section thumbnail accessory.", "thumbnail(\"$1\")"),
+  method("gallery", "gallery() -> MediaGallery", "Create a media gallery component.", "gallery()"),
+  method("file", "file(url: String) -> FileComponent", "Create a file display component.", "file(\"$1\")"),
+  method("separator", "separator() -> Separator", "Create a separator component.", "separator()"),
+  method("container", "container() -> Container", "Create a container component.", "container()")
+];
+
+const autoImports = ["Client", "Intents", "Embed", "Button", "ActionRow", "Row", "Modal", "Slash", "Permissions", "GatewayIntentBits", "Partials", "Select", "SelectMenu", "TextInput", "Component", "Components", "Container", "Section", "TextDisplay", "Router", "Schema"];
 
 export function registerDiscordIntellisense(context: vscode.ExtensionContext): void {
   const selector: vscode.DocumentSelector = [{ language: "yuri", scheme: "file" }, { language: "yuri", scheme: "untitled" }];
@@ -123,6 +155,21 @@ class DiscordCompletionProvider implements vscode.CompletionItemProvider {
     if (/\bButton\.\w*$/u.test(prefix)) {
       return buttonCompletions.map(toCompletionItem);
     }
+    if (/\bComponent\.\w*$/u.test(prefix)) {
+      return componentCompletions.map(toCompletionItem);
+    }
+    if (/\bModal\.\w*$/u.test(prefix)) {
+      return modalCompletions.map(toCompletionItem);
+    }
+    if (/\bSelect\.\w*$/u.test(prefix)) {
+      return selectCompletions.map(toCompletionItem);
+    }
+    if (/\bComponents\.\w*$/u.test(prefix)) {
+      return componentsV2Completions.map(toCompletionItem);
+    }
+    if (/\brouter\.\w*$/u.test(prefix)) {
+      return routerCompletions.map(toCompletionItem);
+    }
     if (/Embed\.create\(\)\s*(?:\.[\w(["'#,\s)]*)*?\.\w*$/su.test(prefix)) {
       return embedCompletions.map(toCompletionItem);
     }
@@ -133,7 +180,7 @@ class DiscordCompletionProvider implements vscode.CompletionItemProvider {
 class DiscordHoverProvider implements vscode.HoverProvider {
   provideHover(document: vscode.TextDocument, position: vscode.Position): vscode.Hover | undefined {
     const word = document.getText(document.getWordRangeAtPosition(position));
-    const spec = [...interactionCompletions, ...slashCompletions, ...buttonCompletions, ...embedCompletions, ...eventCompletions].find((item) => item.label === word);
+    const spec = [...interactionCompletions, ...slashCompletions, ...buttonCompletions, ...embedCompletions, ...eventCompletions, ...routerCompletions, ...componentCompletions, ...modalCompletions, ...selectCompletions, ...componentsV2Completions].find((item) => item.label === word);
     if (!spec) {
       return undefined;
     }
@@ -148,7 +195,7 @@ class DiscordSignatureHelpProvider implements vscode.SignatureHelpProvider {
     if (!match) {
       return undefined;
     }
-    const spec = [...interactionCompletions, ...slashCompletions, ...buttonCompletions, ...embedCompletions].find((item) => item.label === match[1]);
+    const spec = [...interactionCompletions, ...slashCompletions, ...buttonCompletions, ...embedCompletions, ...routerCompletions, ...componentCompletions, ...modalCompletions, ...selectCompletions, ...componentsV2Completions].find((item) => item.label === match[1]);
     if (!spec) {
       return undefined;
     }

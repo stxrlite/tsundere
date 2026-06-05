@@ -2,10 +2,10 @@ import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { cp, link, lstat, mkdir, opendir, readFile, readlink, rename, rm, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { spawn } from "node:child_process";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { existsSync } from "node:fs";
 import type { TsundereConfig } from "./types.js";
+import { commandExists, defaultStorePath, ensureTsunderePaths, expandHomePath, platformExecutable, runCommand, runtimeChecks, tsunderePaths } from "./platform/index.js";
 
 export type TsundereLinkMode = "auto" | "hardlink" | "copy";
 
@@ -130,6 +130,7 @@ export async function optimizedNpmInstall(npmArgs: string[], options: OptimizedI
   const cwd = options.cwd ?? process.cwd();
   const installConfig = resolveInstallConfig(options.config, cwd);
   const startedAt = Date.now();
+  await ensureTsunderePaths(tsunderePaths());
   await ensureStore(installConfig.storePath);
   const beforeEntries = await readPackageEntries(cwd);
   const hydrate = await hydrateCachedPackages(beforeEntries, installConfig);
@@ -162,12 +163,14 @@ export async function optimizedNpmInstall(npmArgs: string[], options: OptimizedI
 
 export async function readStorePath(config: Partial<TsundereConfig> = {}, cwd = process.cwd()): Promise<string> {
   const installConfig = resolveInstallConfig(config, cwd);
+  await ensureTsunderePaths(tsunderePaths());
   await ensureStore(installConfig.storePath);
   return installConfig.storePath;
 }
 
 export async function pruneStore(config: Partial<TsundereConfig> = {}, cwd = process.cwd()): Promise<StorePruneResult> {
   const installConfig = resolveInstallConfig(config, cwd);
+  await ensureTsunderePaths(tsunderePaths());
   await ensureStore(installConfig.storePath);
   const referenced = await readReferencedStoreKeys(installConfig.storePath);
   const entries = await listStoreEntries(installConfig.storePath);
@@ -190,6 +193,7 @@ export async function pruneStore(config: Partial<TsundereConfig> = {}, cwd = pro
 
 export async function cleanStore(config: Partial<TsundereConfig> = {}, cwd = process.cwd()): Promise<StorePruneResult> {
   const installConfig = resolveInstallConfig(config, cwd);
+  await ensureTsunderePaths(tsunderePaths());
   await ensureStore(installConfig.storePath);
   const target = resolve(installConfig.storePath);
   const removedBytes = await directorySize(target);
@@ -200,6 +204,7 @@ export async function cleanStore(config: Partial<TsundereConfig> = {}, cwd = pro
 
 export async function optimizerDoctor(config: Partial<TsundereConfig> = {}, cwd = process.cwd()): Promise<{ ok: boolean; lines: string[] }> {
   const installConfig = resolveInstallConfig(config, cwd);
+  await ensureTsunderePaths(tsunderePaths());
   await ensureStore(installConfig.storePath);
   const entries = await listStoreEntries(installConfig.storePath);
   let invalid = 0;
@@ -209,11 +214,13 @@ export async function optimizerDoctor(config: Partial<TsundereConfig> = {}, cwd 
       invalid += 1;
     }
   }
-  const npmOk = await commandAvailable(process.platform === "win32" ? "npm.cmd" : "npm");
+  const checks = await runtimeChecks();
+  const nodeCheck = checks.find((check) => check.name === "node");
+  const npmCheck = checks.find((check) => check.name === "npm");
+  const npmOk = npmCheck?.available ?? false;
   return {
-    ok: npmOk && invalid === 0,
+    ok: Boolean(nodeCheck?.available) && npmOk && invalid === 0,
     lines: [
-      `  npm: ${npmOk ? "available" : "missing"}`,
       `  tsundere store: ${installConfig.storePath}`,
       `  link mode: ${installConfig.linkMode}`,
       `  strict dependencies: ${installConfig.strictDependencies ? "report" : "off"}`,
@@ -519,11 +526,7 @@ function packageNameFromLockPath(packagePath: string): string | undefined {
 }
 
 function resolveStorePath(value: string | undefined, cwd: string): string {
-  const configured = value ?? "~/.tsundere/store";
-  const expanded = configured === "~" || configured.startsWith("~/") || configured.startsWith("~\\")
-    ? join(homedir(), configured.slice(2))
-    : configured;
-  return isAbsolute(expanded) ? resolve(expanded) : resolve(cwd, expanded);
+  return value ? expandHomePath(value, cwd) : defaultStorePath();
 }
 
 async function ensureStore(storePath: string): Promise<void> {
@@ -775,28 +778,11 @@ function plural(count: number): string {
 }
 
 async function runNpmCommand(args: string[], cwd: string): Promise<number> {
-  const command = process.platform === "win32" ? "npm.cmd" : "npm";
-  return new Promise((resolveCode) => {
-    const executable = process.platform === "win32" ? "cmd.exe" : command;
-    const commandArgs = process.platform === "win32" ? ["/d", "/s", "/c", command, ...args] : args;
-    const child = spawn(executable, commandArgs, {
-      cwd,
-      stdio: "inherit",
-      shell: false
-    });
-    child.on("error", () => resolveCode(1));
-    child.on("close", (code) => resolveCode(code ?? 1));
-  });
-}
-
-async function commandAvailable(command: string): Promise<boolean> {
-  const checker = process.platform === "win32" ? "where.exe" : "sh";
-  const args = process.platform === "win32" ? [command] : ["-c", `command -v ${command}`];
-  return await new Promise<boolean>((resolvePromise) => {
-    const child = spawn(checker, args, { stdio: "ignore", shell: false });
-    child.on("error", () => resolvePromise(false));
-    child.on("close", (code) => resolvePromise(code === 0));
-  });
+  if (!(await commandExists("npm"))) {
+    console.error("npm was not found. Install the Tsundere Runtime prerequisites, then run tsundere doctor again.");
+    return 1;
+  }
+  return runCommand(platformExecutable("npm"), args, { cwd });
 }
 
 async function safeRemoveStorePath(storePath: string, target: string): Promise<void> {

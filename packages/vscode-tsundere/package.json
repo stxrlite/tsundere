@@ -6,7 +6,7 @@
   "publisher": "tsundere",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tsundere-lang/tsundere"
+    "url": "https://github.com/TsundereLang/tsundere"
   },
   "engines": {
     "vscode": "^1.92.0"
@@ -47,9 +47,13 @@
       { "command": "tsundere.createProject", "title": "Tsundere: Create Project" },
       { "command": "tsundere.runDevServer", "title": "Tsundere: Run Dev Server" },
       { "command": "tsundere.buildProject", "title": "Tsundere: Build Project" },
+      { "command": "tsundere.buildProtected", "title": "Tsundere: Build Protected Project" },
+      { "command": "tsundere.inspectFingerprint", "title": "Tsundere: Inspect Fingerprint" },
       { "command": "tsundere.syncCommands", "title": "Tsundere: Sync Commands" },
+      { "command": "tsundere.syncDiscordTypes", "title": "Tsundere: Sync Discord Types" },
       { "command": "tsundere.generateTypes", "title": "Tsundere: Generate Types" },
       { "command": "tsundere.openDocs", "title": "Tsundere: Open Docs" },
+      { "command": "tsundere.openPluginRepo", "title": "Tsundere: Open Plugin Repo" },
       { "command": "tsundere.formatFile", "title": "Tsundere: Format File" },
       { "command": "tsundere.restartLanguageServer", "title": "Tsundere: Restart Language Server" }
     ],

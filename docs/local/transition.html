@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transition to Yuri - Tsundere Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body class="bg-white text-slate-900">
+  <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <aside class="border-r border-slate-200 bg-slate-50 px-6 py-6 lg:sticky lg:top-0 lg:h-screen">
+      <div class="flex items-center gap-3">
+        <img src="../../assets/tsundere-logo.png" alt="Tsundere logo" class="h-12 w-12 rounded-lg object-cover">
+        <div><div class="text-lg font-semibold">Tsundere</div><div class="text-xs text-slate-500">Local Documentation</div></div>
+      </div>
+      <nav class="mt-8 space-y-1 text-sm">
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="index.html">Overview</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="getting-started.html">Getting Started</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="discord.html">Discord Guide</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="cli.html">CLI and Runtime</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="updates.html">Updates</a>
+      </nav>
+    </aside>
+    <main class="mx-auto w-full max-w-5xl px-6 py-10">
+      <h1 class="text-4xl font-bold tracking-tight">Transition to Yuri</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">Yuri is familiar if you know JavaScript, but Tsundere is not meant to be a plain one-to-one copy. The Discord workflow uses command discovery, typed wrapper APIs, stricter diagnostics, and project layouts that remove repeated bot boilerplate.</p>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">From JavaScript</h2>
+        <div class="mt-4 grid gap-4 md:grid-cols-2">
+          <div class="rounded-lg border border-slate-200 p-5">
+            <h3 class="font-semibold">JavaScript</h3>
+            <pre class="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-4 text-sm text-slate-100"><code>client.on("interactionCreate", async (i) => {
+  if (!i.isChatInputCommand()) return
+  if (i.commandName === "ping") {
+    await i.reply("pong")
+  }
+})</code></pre>
+          </div>
+          <div class="rounded-lg border border-slate-200 p-5">
+            <h3 class="font-semibold">Yuri</h3>
+            <pre class="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-4 text-sm text-slate-100"><code>client.on("interactionCreate", async (interaction) => {
+  if interaction.isCommand("ping") {
+    await interaction.reply("pong")
+  }
+})</code></pre>
+          </div>
+        </div>
+        <p class="mt-4 text-slate-600">The big change is not just syntax. Tsundere tries to infer Discord intent needs, validate Discord limits, and suggest wrapper methods directly in the editor.</p>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">From Python</h2>
+        <div class="mt-4 grid gap-4 md:grid-cols-2">
+          <div class="rounded-lg border border-slate-200 p-5">
+            <h3 class="font-semibold">Python Bot Style</h3>
+            <pre class="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-4 text-sm text-slate-100"><code>@bot.event
+async def on_ready():
+    print("online")
+
+@bot.command()
+async def ping(ctx):
+    await ctx.reply("pong")</code></pre>
+          </div>
+          <div class="rounded-lg border border-slate-200 p-5">
+            <h3 class="font-semibold">Yuri Bot Style</h3>
+            <pre class="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-4 text-sm text-slate-100"><code>client.once("ready", () => {
+  log("online")
+})
+
+Slash.command("ping")
+  .description("Reply with pong")
+  .register(client)</code></pre>
+          </div>
+        </div>
+        <p class="mt-4 text-slate-600">Python decorators usually hide registration inside the framework. Tsundere keeps registration explicit or discoverable through command files, so you can still understand what gets sent to Discord.</p>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Core Differences</h2>
+        <div class="mt-4 overflow-hidden rounded-lg border border-slate-200">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600"><tr><th class="px-4 py-3">Concept</th><th class="px-4 py-3">How Yuri Handles It</th></tr></thead>
+            <tbody class="divide-y divide-slate-200">
+              <tr><td class="px-4 py-3 font-mono">imports</td><td class="px-4 py-3">Use normal package imports, including npm packages and `@tsundere/discord`.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">events</td><td class="px-4 py-3">Use `client.on` and `client.once`, with Discord-aware autocomplete and intent diagnostics.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">commands</td><td class="px-4 py-3">Use `Slash.command` or command files in `src/commands` for discovery.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">replies</td><td class="px-4 py-3">Use typed interaction helpers like `reply`, `deferReply`, `editReply`, and `followUp`.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">builders</td><td class="px-4 py-3">Use Tsundere builders for embeds, buttons, rows, modals, and selects.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">runtime</td><td class="px-4 py-3">Use `tsundere dev`, `tsundere build`, and `tsundere start` instead of manually running generated files.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

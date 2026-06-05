@@ -1,4 +1,5 @@
 export type TsundereTarget = "javascript" | "typescript";
+export type ProtectProfile = "standard" | "advanced" | "maximum";
 
 export interface TsundereConfig {
   name: string;
@@ -24,6 +25,14 @@ export interface TsundereConfig {
     defaultIntents?: string[];
   };
   commands?: CommandDiscoveryConfig;
+  diagnostics?: DiagnosticConfig;
+}
+
+export interface DiagnosticConfig {
+  warnings?: boolean;
+  verbose?: boolean;
+  color?: boolean;
+  disabled?: string[];
 }
 
 export interface CommandDiscoveryConfig {

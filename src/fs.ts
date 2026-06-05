@@ -3,14 +3,12 @@ import { join } from "node:path";
 
 export async function walk(root: string, extension: string): Promise<string[]> {
   const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
-  const files: string[] = [];
-  for (const entry of entries) {
+  const nested = await Promise.all(entries.map(async (entry) => {
     const path = join(root, entry.name);
     if (entry.isDirectory()) {
-      files.push(...await walk(path, extension));
-    } else if (entry.isFile() && path.endsWith(extension)) {
-      files.push(path);
+      return walk(path, extension);
     }
-  }
-  return files;
+    return entry.isFile() && path.endsWith(extension) ? [path] : [];
+  }));
+  return nested.flat().sort((left, right) => left.localeCompare(right));
 }

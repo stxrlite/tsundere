@@ -5,16 +5,19 @@ import { deflateSync } from "node:zlib";
 
 const root = resolve(import.meta.dirname, "..");
 const repoRoot = resolve(root, "..", "..");
-const sourceLogo = resolve(repoRoot, "assets", "tsundere-logo.png");
+const sourceLogo = resolve(repoRoot, "assets", "vscode-tsundere-logo.png");
+const fallbackSourceLogo = resolve(repoRoot, "assets", "tsundere-logo.png");
 const targetLogo = resolve(root, "assets", "tsundere-logo.png");
 
 await mkdir(dirname(targetLogo), { recursive: true });
 
 if (existsSync(sourceLogo)) {
   await copyFile(sourceLogo, targetLogo);
+} else if (existsSync(fallbackSourceLogo)) {
+  await copyFile(fallbackSourceLogo, targetLogo);
 } else {
   await writeFile(targetLogo, createFallbackLogoPng(128));
-  console.warn("Using generated fallback logo. Add assets/tsundere-logo.png to use the official mascot image.");
+  console.warn("Using generated fallback logo. Add assets/vscode-tsundere-logo.png to use the official VS Code icon.");
 }
 
 function createFallbackLogoPng(size) {

@@ -37,6 +37,17 @@ export interface User {
   globalName?: string | null;
   bot?: boolean;
   tag: string;
+  presence?: PresenceData;
+  setPresence?(presence: PresenceData): void;
+}
+
+export interface PresenceData {
+  status?: "online" | "idle" | "dnd" | "invisible" | "offline" | string;
+  activities?: Array<{
+    name: string;
+    type?: number | string;
+    url?: string;
+  }>;
 }
 
 export interface Guild {

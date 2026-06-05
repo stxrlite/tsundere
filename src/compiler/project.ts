@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, watch } from "node:fs";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { spawn, type ChildProcess } from "node:child_process";
 import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import type { ProtectProfile, TsundereConfig } from "../types.js";
 import { compileYuri } from "./transpile.js";
@@ -62,6 +63,7 @@ export async function buildProject(config: TsundereConfig, cwd = process.cwd(), 
     return 1;
   }
   if (options.emitRuntime ?? true) {
+    await refreshBundledDiscordRuntime(cwd);
     await emitNodeRuntime(config, cwd, options);
   }
   return 0;
@@ -111,22 +113,44 @@ export async function devProject(config: TsundereConfig, cwd = process.cwd()): P
   const sourceRoot = resolve(cwd, config.source);
   console.log(`Tsundere dev is watching ${sourceRoot}`);
 
-  const watcher = watch(sourceRoot, { recursive: true }, (_event, filename) => {
-    if (!filename || !filename.endsWith(".yuri")) {
-      return;
-    }
+  const scheduleRebuild = (): void => {
     if (timer) {
       clearTimeout(timer);
     }
     timer = setTimeout(() => {
       void rebuild();
     }, 100);
-  });
+  };
+
+  let snapshot = await sourceSnapshot(sourceRoot);
+  let watcher: ReturnType<typeof watch> | undefined;
+  try {
+    watcher = watch(sourceRoot, { recursive: true }, (_event, filename) => {
+      if (!filename || !filename.endsWith(".yuri")) {
+        return;
+      }
+      void sourceSnapshot(sourceRoot).then((next) => {
+        snapshot = next;
+      });
+      scheduleRebuild();
+    });
+  } catch {
+    watcher = undefined;
+  }
+  const poller = setInterval(() => {
+    void sourceSnapshot(sourceRoot).then((next) => {
+      if (!sameSnapshot(snapshot, next)) {
+        snapshot = next;
+        scheduleRebuild();
+      }
+    });
+  }, 750);
   const keepAlive = setInterval(() => undefined, 2147483647);
 
   const stop = (): void => {
     clearInterval(keepAlive);
-    watcher.close();
+    clearInterval(poller);
+    watcher?.close();
     if (child) {
       child.kill();
     }
@@ -189,6 +213,48 @@ async function emitNodeRuntime(config: TsundereConfig, cwd: string, options: Bui
     const ids = protectedBuilds.map((build) => build.buildId).join(", ");
     console.log(`Tsundere Protect ${options.protect.profile}: ${ids || "no runtime files"}`);
   }
+}
+
+async function refreshBundledDiscordRuntime(cwd: string): Promise<void> {
+  const cliDistRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  const sourceDist = resolve(cliDistRoot, "discord");
+  if (!existsSync(sourceDist)) {
+    return;
+  }
+  const targetRoot = resolve(cwd, ".tsundere", "runtime", "discord");
+  const targetDist = resolve(targetRoot, "dist");
+  await rm(targetDist, { recursive: true, force: true });
+  await mkdir(targetRoot, { recursive: true });
+  await cp(sourceDist, targetDist, { recursive: true, force: true });
+  await writeFile(resolve(targetRoot, "package.json"), `${JSON.stringify({
+    name: "@tsundere/discord",
+    version: "0.1.0",
+    type: "module",
+    exports: { ".": "./dist/index.js" },
+    types: "./dist/index.d.ts"
+  }, null, 2)}\n`, "utf8");
+}
+
+async function sourceSnapshot(sourceRoot: string): Promise<Map<string, number>> {
+  const files = await walk(sourceRoot, ".yuri");
+  const snapshot = new Map<string, number>();
+  await Promise.all(files.map(async (file) => {
+    const info = await stat(file);
+    snapshot.set(file, info.mtimeMs);
+  }));
+  return snapshot;
+}
+
+function sameSnapshot(left: Map<string, number>, right: Map<string, number>): boolean {
+  if (left.size !== right.size) {
+    return false;
+  }
+  for (const [file, mtime] of left) {
+    if (right.get(file) !== mtime) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function shouldSkipDiagnostic(diagnostic: { code: string; severity: "error" | "warning" }, config: TsundereConfig): boolean {

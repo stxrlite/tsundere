@@ -157,7 +157,11 @@ export async function registerSlashCommands(
   const route = scope.guildId
     ? `/applications/${applicationId}/guilds/${scope.guildId}/commands`
     : `/applications/${applicationId}/commands`;
-  await client.rest.put(route, commands);
+  try {
+    await client.rest.put(route, commands);
+  } catch (error) {
+    console.warn(`Tsundere command sync skipped: ${errorSummary(error)}`);
+  }
 }
 
 export async function deleteSlashCommand(
@@ -174,3 +178,7 @@ export async function deleteSlashCommand(
 
 export const syncGuildCommands = registerSlashCommands;
 export const syncGlobalCommands = registerSlashCommands;
+
+function errorSummary(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}

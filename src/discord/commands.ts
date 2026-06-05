@@ -153,6 +153,12 @@ export async function registerSlashCommands(
   commands: SlashCommandData[],
   scope: { guildId?: Snowflake; applicationId?: Snowflake } = {}
 ): Promise<void> {
+  if (!scope.applicationId && client.user.id === "0") {
+    client.once("ready", () => {
+      void registerSlashCommands(client, commands, scope);
+    });
+    return;
+  }
   const applicationId = scope.applicationId ?? client.user.id;
   const route = scope.guildId
     ? `/applications/${applicationId}/guilds/${scope.guildId}/commands`

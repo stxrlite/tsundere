@@ -731,7 +731,10 @@ async function installBundledDiscordRuntime(projectRoot: string): Promise<void> 
     version: "0.1.0",
     type: "module",
     exports: { ".": "./dist/index.js" },
-    types: "./dist/index.d.ts"
+    types: "./dist/index.d.ts",
+    dependencies: {
+      "discord.js": "^14.26.4"
+    }
   }, null, 2)}\n`, "utf8");
 }
 

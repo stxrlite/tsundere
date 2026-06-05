@@ -52,7 +52,7 @@ $Draft = [bool]$Draft -or (Ask-YesNo "Create as draft release" $false)
 if (-not $NoBuild -and (Ask-YesNo "Rebuild release bundle before publishing" $true)) {
   Push-Location $Root
   try {
-    npm run dist:release -- -Version $Version
+    npm.cmd run dist:release -- -Version $Version
   }
   finally {
     Pop-Location

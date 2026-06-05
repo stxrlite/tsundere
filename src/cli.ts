@@ -247,7 +247,8 @@ async function doctor(): Promise<number> {
   console.log(`  cache: ${paths.cache}`);
   console.log(`  logs: ${paths.logs}`);
   for (const check of await runtimeChecks()) {
-    console.log(`  ${check.name}: ${check.available ? "available" : "missing"} (${check.command})`);
+    const name = check.name === "node" ? `Tsundere Runtime ${packageVersion()}` : check.name;
+    console.log(`  ${name}: ${check.available ? "available" : "missing"} (${check.command})`);
   }
   if (currentPlatform() === "linux") {
     console.log("  linux shell: sh-compatible command lookup enabled");

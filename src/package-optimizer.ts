@@ -779,7 +779,7 @@ function plural(count: number): string {
 
 async function runNpmCommand(args: string[], cwd: string): Promise<number> {
   if (!(await commandExists("npm"))) {
-    console.error("npm was not found. Install Node.js and npm, then run tsundere doctor again.");
+    console.error("npm was not found. Install the Tsundere Runtime prerequisites, then run tsundere doctor again.");
     return 1;
   }
   return runCommand(platformExecutable("npm"), args, { cwd });

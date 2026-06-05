@@ -69,7 +69,7 @@ tsundere docs
 
 ## Linux Setup
 
-Tsundere supports Linux, macOS, and Windows. On Linux, install Node.js 18 or newer and npm first:
+Tsundere supports Linux, macOS, and Windows. On Linux, install the Tsundere Runtime prerequisites first: Node.js 18 or newer and npm.
 
 ```bash
 node --version
@@ -100,7 +100,7 @@ Linux storage paths:
 ~/.tsundere/logs/
 ```
 
-`tsundere doctor` verifies Node.js, npm, package optimizer storage, and Linux executable permissions for bundled scripts. If Linux reports `permission denied`, run:
+`tsundere doctor` verifies the Tsundere Runtime, npm, package optimizer storage, and Linux executable permissions for bundled scripts. If Linux reports `permission denied`, run:
 
 ```bash
 chmod +x scripts/install-linux.sh

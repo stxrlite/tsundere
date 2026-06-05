@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plugin Marketplace - Tsundere Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body class="bg-white text-slate-900">
+  <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <aside class="border-r border-slate-200 bg-slate-50 px-6 py-6 lg:sticky lg:top-0 lg:h-screen">
+      <div class="flex items-center gap-3">
+        <img src="../../assets/tsundere-logo.png" alt="Tsundere logo" class="h-12 w-12 rounded-lg object-cover">
+        <div><div class="text-lg font-semibold">Tsundere</div><div class="text-xs text-slate-500">Local Documentation</div></div>
+      </div>
+      <nav class="mt-8 space-y-1 text-sm">
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="index.html">Overview</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="getting-started.html">Getting Started</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="discord.html">Discord Guide</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="cli.html">CLI and Runtime</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="updates.html">Updates</a>
+      </nav>
+    </aside>
+    <main class="mx-auto w-full max-w-5xl px-6 py-10">
+      <h1 class="text-4xl font-bold tracking-tight">Compiler Plugin Marketplace</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">Tsundere should stay focused. Plugins live in a separate community repo so people can fork it, add examples, and open pull requests without bloating the core language package.</p>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Plugin Repository</h2>
+        <p class="mt-3 text-slate-600">The official plugin registry repo is `TsundereLang/tsundere-plugins`.</p>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>git clone https://github.com/TsundereLang/tsundere-plugins
+cd tsundere-plugins</code></pre>
+        <p class="mt-4 text-slate-600">To contribute, fork the repo, create a folder in `plugins/`, add a `plugin.json`, update `registry.json`, and open a pull request. Manual installs from GitHub links are supported through `tsundere plugin install`.</p>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Commands</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>tsundere plugin add react
+tsundere plugin install protect
+tsundere plugin install github:user/repo
+tsundere plugin install https://github.com/user/repo.git
+tsundere plugin add prisma
+tsundere plugin add protect
+tsundere plugin search
+tsundere plugin update</code></pre>
+      </section>
+
+      <section class="mt-10 grid gap-4 md:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-5"><h2 class="text-xl font-semibold">Framework Plugins</h2><p class="mt-3 text-slate-600">React, Vue, Next, Nuxt, Svelte, and other framework adapters.</p></div>
+        <div class="rounded-lg border border-slate-200 p-5"><h2 class="text-xl font-semibold">Database Plugins</h2><p class="mt-3 text-slate-600">Prisma, Drizzle, TypeORM, Mongoose, Redis, and schema-aware helpers.</p></div>
+        <div class="rounded-lg border border-slate-200 p-5"><h2 class="text-xl font-semibold">Discord Plugins</h2><p class="mt-3 text-slate-600">Voice, interactions, REST tools, command graph helpers, and metadata generators.</p></div>
+        <div class="rounded-lg border border-slate-200 p-5"><h2 class="text-xl font-semibold">Compiler Plugins</h2><p class="mt-3 text-slate-600">Protect, optimizer, profiler, custom diagnostics, syntax extensions, and lint rules.</p></div>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Plugin Manifest</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>{
+  "name": "@tsundere/plugin-discord-intents",
+  "displayName": "Discord Intent Analyzer",
+  "description": "Adds Discord intent diagnostics.",
+  "version": "0.1.0",
+  "author": "YourName",
+  "category": "discord",
+  "entry": "src/index.ts",
+  "hooks": ["diagnostics:discord", "language-server:hover"],
+  "keywords": ["discord", "intents"]
+}</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Plugin API Vision</h2>
+        <p class="mt-3 text-slate-600">Plugins should be able to hook parser output, AST transforms, type metadata, compiler emit, build pipeline steps, YuriLS behavior, CLI commands, diagnostics, and code generation.</p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,4 +1,5 @@
 export type TsundereTarget = "javascript" | "typescript";
+export type ProtectProfile = "standard" | "advanced" | "maximum";
 
 export interface TsundereConfig {
   name: string;

@@ -2,10 +2,17 @@ import type {
   APIAttachment,
   APIButton,
   APIComponentRow,
+  APIContainer,
   APIEmbed,
+  APIFileComponent,
+  APIMediaGallery,
   APIModal,
   APISelectMenu,
+  APISection,
+  APISeparator,
+  APITextDisplay,
   APITextInput,
+  APIThumbnailComponent,
   HexColor
 } from "./types.js";
 
@@ -271,6 +278,164 @@ export class Row {
     return { type: "row", components: components.map((component) => component.toJSON()) };
   }
 }
+
+export class TextDisplay {
+  constructor(private readonly content: string) {}
+
+  static create(content: string): TextDisplay {
+    return new TextDisplay(content);
+  }
+
+  toJSON(): APITextDisplay {
+    return { type: "textDisplay", content: this.content };
+  }
+}
+
+export class ThumbnailComponent {
+  private descriptionText?: string;
+
+  constructor(private readonly url: string) {}
+
+  static create(url: string): ThumbnailComponent {
+    return new ThumbnailComponent(url);
+  }
+
+  description(description: string): this {
+    this.descriptionText = description;
+    return this;
+  }
+
+  toJSON(): APIThumbnailComponent {
+    return this.descriptionText
+      ? { type: "thumbnail", media: { url: this.url }, description: this.descriptionText }
+      : { type: "thumbnail", media: { url: this.url } };
+  }
+}
+
+export class Section {
+  private readonly text: APITextDisplay[] = [];
+  private accessoryComponent?: APIButton | APIThumbnailComponent;
+
+  static create(): Section {
+    return new Section();
+  }
+
+  content(content: string): this {
+    this.text.push(TextDisplay.create(content).toJSON());
+    return this;
+  }
+
+  accessory(component: { toJSON(): APIButton | APIThumbnailComponent }): this {
+    this.accessoryComponent = component.toJSON();
+    return this;
+  }
+
+  toJSON(): APISection {
+    return {
+      type: "section",
+      components: [...this.text],
+      ...(this.accessoryComponent ? { accessory: this.accessoryComponent } : {})
+    };
+  }
+}
+
+export class MediaGallery {
+  private readonly mediaItems: APIMediaGallery["items"] = [];
+
+  static create(): MediaGallery {
+    return new MediaGallery();
+  }
+
+  item(url: string, description?: string): this {
+    this.mediaItems.push(description ? { media: { url }, description } : { media: { url } });
+    return this;
+  }
+
+  toJSON(): APIMediaGallery {
+    return { type: "mediaGallery", items: [...this.mediaItems] };
+  }
+}
+
+export class FileComponent {
+  private fileName?: string;
+
+  constructor(private readonly url: string) {}
+
+  static create(url: string): FileComponent {
+    return new FileComponent(url);
+  }
+
+  name(name: string): this {
+    this.fileName = name;
+    return this;
+  }
+
+  toJSON(): APIFileComponent {
+    return this.fileName
+      ? { type: "file", file: { url: this.url }, name: this.fileName }
+      : { type: "file", file: { url: this.url } };
+  }
+}
+
+export class Separator {
+  private showDivider = true;
+  private separatorSpacing: "small" | "large" = "small";
+
+  static create(): Separator {
+    return new Separator();
+  }
+
+  divider(divider = true): this {
+    this.showDivider = divider;
+    return this;
+  }
+
+  spacing(spacing: "small" | "large"): this {
+    this.separatorSpacing = spacing;
+    return this;
+  }
+
+  toJSON(): APISeparator {
+    return { type: "separator", divider: this.showDivider, spacing: this.separatorSpacing };
+  }
+}
+
+export class Container {
+  private readonly childComponents: APIContainer["components"] = [];
+  private color?: number;
+
+  static create(): Container {
+    return new Container();
+  }
+
+  accentColor(color: HexColor | number): this {
+    this.color = typeof color === "number" ? color : Number.parseInt(color.slice(1), 16);
+    return this;
+  }
+
+  add(...components: Array<{ toJSON(): APIContainer["components"][number] }>): this {
+    this.childComponents.push(...components.map((component) => component.toJSON()));
+    return this;
+  }
+
+  toJSON(): APIContainer {
+    return {
+      type: "container",
+      ...(this.color !== undefined ? { accentColor: this.color } : {}),
+      components: [...this.childComponents]
+    };
+  }
+}
+
+export const Components = {
+  text: TextDisplay.create,
+  section: Section.create,
+  thumbnail: ThumbnailComponent.create,
+  gallery: MediaGallery.create,
+  file: FileComponent.create,
+  separator: Separator.create,
+  container: Container.create
+};
 
 export class Modal {
   private readonly rows: APIComponentRow[] = [];

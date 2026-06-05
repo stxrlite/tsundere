@@ -1,5 +1,6 @@
 param(
-  [string]$OutDir = "release"
+  [string]$OutDir = "release",
+  [string]$Version = "0.1.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -118,6 +119,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -NoExit -File "%~dp0install-ts
 '@
   Set-Content -Path (Join-Path $release "installer.bat") -Value $bat -Encoding ASCII
 
+  Copy-Item -LiteralPath (Join-Path $root "scripts/install-tsundere-windows.ps1") -Destination (Join-Path $release "install-tsundere-windows.ps1") -Force
+  Copy-Item -LiteralPath (Join-Path $root "scripts/install-tsundere-linux.sh") -Destination (Join-Path $release "install-tsundere-linux.sh") -Force
+
   $tgz = Get-ChildItem $release -Filter "*.tgz" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
   $cliTgz = Get-ChildItem $release -Filter "tsundere-cli-*.tgz" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
   if ($cliTgz) {
@@ -126,6 +130,73 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -NoExit -File "%~dp0install-ts
   $discordTgz = Get-ChildItem $release -Filter "tsundere-discord-*.tgz" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
   if ($discordTgz) {
     Copy-Item -LiteralPath $discordTgz.FullName -Destination (Join-Path $release "tsundere-discord.tgz") -Force
+  }
+
+  $bundleName = "Tsundere-v$Version"
+  $bundleDir = Join-Path $release $bundleName
+  $bundleZip = Join-Path $release "$bundleName.zip"
+  $bundleRar = Join-Path $release "$bundleName.rar"
+  if (Test-Path $bundleDir) {
+    Remove-Item $bundleDir -Recurse -Force
+  }
+  if (Test-Path $bundleZip) {
+    Remove-Item $bundleZip -Force
+  }
+  if (Test-Path $bundleRar) {
+    Remove-Item $bundleRar -Force
+  }
+  New-Item -ItemType Directory -Force -Path $bundleDir | Out-Null
+
+  $bundleAssets = @(
+    "install-tsundere.ps1",
+    "install-tsundere-windows.ps1",
+    "install-tsundere-linux.sh",
+    "installer.bat",
+    "tsundere-cli.tgz",
+    "tsundere-discord.tgz",
+    "vscode-tsundere-0.1.0.vsix"
+  )
+
+  foreach ($asset in $bundleAssets) {
+    $source = Join-Path $release $asset
+    if (-not (Test-Path $source)) {
+      throw "Missing bundle asset: $source"
+    }
+    Copy-Item -LiteralPath $source -Destination (Join-Path $bundleDir $asset) -Force
+  }
+
+  $hashLines = foreach ($asset in $bundleAssets) {
+    $file = Join-Path $bundleDir $asset
+    $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $file).Hash.ToLowerInvariant()
+    "$hash  $asset"
+  }
+  Set-Content -Path (Join-Path $bundleDir "SHA256SUMS.txt") -Value $hashLines -Encoding ASCII
+
+  $rar = Get-Command rar -ErrorAction SilentlyContinue
+  $winrar = Get-Command winrar -ErrorAction SilentlyContinue
+  if ($rar) {
+    Push-Location $release
+    try {
+      & $rar.Source a -r "$bundleName.rar" $bundleName | Out-Host
+    }
+    finally {
+      Pop-Location
+    }
+    Write-Host "Release bundle written to $bundleRar"
+  }
+  elseif ($winrar) {
+    Push-Location $release
+    try {
+      & $winrar.Source a -afrar -r "$bundleName.rar" $bundleName | Out-Host
+    }
+    finally {
+      Pop-Location
+    }
+    Write-Host "Release bundle written to $bundleRar"
+  }
+  else {
+    Compress-Archive -Path (Join-Path $bundleDir "*") -DestinationPath $bundleZip -Force
+    Write-Warning "WinRAR/RAR was not found. Created zip bundle instead: $bundleZip"
   }
 
   Write-Host "Distribution files written to $release"

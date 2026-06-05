@@ -36,10 +36,24 @@ export function activate(context: vscode.ExtensionContext): void {
     },
     "tsundere.runDevServer": () => run("tsundere dev"),
     "tsundere.buildProject": () => run("tsundere build"),
+    "tsundere.buildProtected": async () => {
+      const profile = await vscode.window.showQuickPick(["standard", "advanced", "maximum"], {
+        title: "Select Tsundere Protect profile"
+      });
+      if (!profile) {
+        return;
+      }
+      run(`tsundere build --protect ${profile}`);
+    },
+    "tsundere.inspectFingerprint": () => run("tsundere fingerprint inspect"),
     "tsundere.syncCommands": () => run("tsundere commands sync"),
+    "tsundere.syncDiscordTypes": () => run("tsundere types sync"),
     "tsundere.generateTypes": () => run("tsundere generate types"),
     "tsundere.openDocs": async () => {
       await vscode.env.openExternal(vscode.Uri.parse("https://tsundere.dev/docs"));
+    },
+    "tsundere.openPluginRepo": async () => {
+      await vscode.env.openExternal(vscode.Uri.parse("https://github.com/TsundereLang/tsundere-plugins"));
     },
     "tsundere.formatFile": () => run("tsundere format"),
     "tsundere.restartLanguageServer": () => vscode.commands.executeCommand("workbench.action.reloadWindow")

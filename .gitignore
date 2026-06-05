@@ -5,6 +5,12 @@ build/
 .yuri-cache/
 .npm-cache/
 release/
+tsundere-plugins/
+tsundere-gitbot/
+tsundere-dotgithub/
+github-snake.svg
+github-snake-dark.svg
+dist/snake/
 .env
 .env.*
 !.env.example

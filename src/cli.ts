@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { ProtectProfile } from "./types.js";
 import { loadConfig, validateConfig } from "./config.js";
 import { buildProject, devProject, runBuiltProject } from "./compiler/project.js";
 import { walk } from "./fs.js";
@@ -13,7 +14,7 @@ import { commandExists, currentPlatform, ensureExecutable, ensureTsunderePaths, 
 
 const [, , command = "help", ...args] = process.argv;
 const cliRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const DEFAULT_GITHUB_REPO = "tsundere-dev/tsundere";
+const DEFAULT_GITHUB_REPO = "TsundereLang/tsundere";
 
 try {
   const code = await run(command, args);
@@ -48,7 +49,7 @@ async function run(command: string, args: string[]): Promise<number> {
     case "dev":
       return dev();
     case "build":
-      return build();
+      return build(args);
     case "start":
       return start();
     case "format":
@@ -69,6 +70,8 @@ async function run(command: string, args: string[]): Promise<number> {
       return runtime(args);
     case "commands":
       return commands(args);
+    case "fingerprint":
+      return fingerprint(args);
     case "help":
     default:
       printHelp();
@@ -180,9 +183,9 @@ async function dev(): Promise<number> {
   return devProject(config);
 }
 
-async function build(): Promise<number> {
+async function build(args: string[] = []): Promise<number> {
   const config = await loadConfig();
-  return buildProject(config);
+  return buildProject(config, process.cwd(), { protect: readProtectOptions(args) });
 }
 
 async function start(): Promise<number> {
@@ -356,11 +359,12 @@ async function generate(args: string[]): Promise<number> {
 async function plugin(args: string[]): Promise<number> {
   const action = args[0];
   const name = args[1];
-  if (action !== "add" || !name) {
-    throw new Error("Usage: tsundere plugin add <name>");
+  if ((action !== "add" && action !== "install") || !name) {
+    throw new Error("Usage: tsundere plugin add|install <name-or-git-url>");
   }
-  const packageName = name.startsWith("@") ? name : `@tsundere/plugin-${name}`;
-  return pnpm(["add", "-D", packageName]);
+  const config = await loadConfig();
+  const packageName = pluginPackageName(name);
+  return optimizedNpmInstall(["install", "-D", packageName], { config });
 }
 
 async function types(args: string[]): Promise<number> {
@@ -400,6 +404,46 @@ async function types(args: string[]): Promise<number> {
     default:
       throw new Error("Unknown types command. Try: tsundere types sync|inspect|clean|doctor");
   }
+}
+
+async function fingerprint(args: string[]): Promise<number> {
+  const action = args[0] ?? "inspect";
+  if (action !== "inspect") {
+    throw new Error("Usage: tsundere fingerprint inspect [file-or-directory]");
+  }
+  const target = resolve(process.cwd(), args[1] ?? ".tsundere/runtime-build");
+  if (!existsSync(target)) {
+    throw new Error(`Fingerprint target not found: ${target}`);
+  }
+  const targetStats = statSync(target);
+  const metadataPath = targetStats.isDirectory() ? resolve(target, "tsundere-protect.json") : "";
+  if (existsSync(metadataPath)) {
+    const metadata = JSON.parse(readFileSyncText(metadataPath)) as {
+      profile?: string;
+      files?: Array<{ file: string; buildId: string; profile: string }>;
+    };
+    console.log("Tsundere Fingerprint Report");
+    console.log(`  profile: ${metadata.profile ?? "unknown"}`);
+    for (const file of metadata.files ?? []) {
+      console.log(`  ${file.file}: ${file.buildId} (${file.profile})`);
+    }
+    return 0;
+  }
+  if (targetStats.isDirectory()) {
+    console.log("No Tsundere fingerprint metadata found in this directory.");
+    return 1;
+  }
+  const source = readFileSyncText(target);
+  const matches = [...source.matchAll(/[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}/gu)].map((match) => match[0]);
+  if (matches.length === 0) {
+    console.log("No Tsundere fingerprint detected.");
+    return 1;
+  }
+  console.log("Tsundere Fingerprint Report");
+  for (const match of new Set(matches)) {
+    console.log(`  build: ${match}`);
+  }
+  return 0;
 }
 
 async function pnpm(args: string[], options: { quiet?: boolean } = {}): Promise<number> {
@@ -467,12 +511,13 @@ function withWorkspaceRootFlag(args: string[]): string[] {
 
 function printHelp(): void {
   console.log(`Tsundere ${packageVersion()}
-TypeScript-style .yuri tooling for Discord bots.
+Clean .yuri tooling for Discord bots.
 
 Usage:
   tsundere create <name> --template discord
   tsundere dev
   tsundere build
+  tsundere build --protect standard
   tsundere start
   tsundere add <package>
   tsundere remove <package>
@@ -491,12 +536,14 @@ Usage:
   tsundere generate types
   tsundere generate api|route|service|command|model --name <name>
   tsundere plugin add <name>
+  tsundere plugin install <name-or-git-url>
   tsundere types sync
   tsundere types inspect <Symbol>
   tsundere types clean
   tsundere types doctor
   tsundere runtime install
   tsundere commands sync
+  tsundere fingerprint inspect
 `);
 }
 
@@ -580,6 +627,41 @@ function prettyError(error: unknown): string {
 function readFlag(args: string[], flag: string): string | undefined {
   const index = args.indexOf(flag);
   return index >= 0 ? args[index + 1] : undefined;
+}
+
+function readProtectOptions(args: string[]): { profile: ProtectProfile; seed?: string | undefined } | undefined {
+  const index = args.indexOf("--protect");
+  if (index < 0) {
+    return undefined;
+  }
+  const candidate = args[index + 1];
+  const profile = isProtectProfile(candidate) ? candidate : "standard";
+  const seed = readFlag(args, "--seed");
+  return { profile, seed };
+}
+
+function isProtectProfile(value: string | undefined): value is ProtectProfile {
+  return value === "standard" || value === "advanced" || value === "maximum";
+}
+
+function pluginPackageName(value: string): string {
+  if (
+    value.startsWith("@") ||
+    value.startsWith("file:") ||
+    value.startsWith("git+") ||
+    value.startsWith("github:") ||
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.includes("\\") ||
+    value.startsWith(".") ||
+    value.startsWith("/")
+  ) {
+    return value;
+  }
+  if (/^[\w.-]+\/[\w.-]+(?:#.+)?$/u.test(value)) {
+    return `github:${value}`;
+  }
+  return `@tsundere/plugin-${value}`;
 }
 
 function templateFiles(name: string, template: string): Map<string, string> {

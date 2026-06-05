@@ -179,7 +179,14 @@ export type APIComponent =
   | APIButton
   | APISelectMenu
   | APIModal
-  | APITextInput;
+  | APITextInput
+  | APITextDisplay
+  | APISection
+  | APIThumbnailComponent
+  | APIMediaGallery
+  | APIFileComponent
+  | APISeparator
+  | APIContainer;
 
 export interface APIButton {
   type: "button";
@@ -217,4 +224,44 @@ export interface APITextInput {
   maxLength?: number;
   value?: string;
   placeholder?: string;
+}
+
+export interface APITextDisplay {
+  type: "textDisplay";
+  content: string;
+}
+
+export interface APIThumbnailComponent {
+  type: "thumbnail";
+  media: { url: string };
+  description?: string;
+}
+
+export interface APISection {
+  type: "section";
+  components: APITextDisplay[];
+  accessory?: APIButton | APIThumbnailComponent;
+}
+
+export interface APIMediaGallery {
+  type: "mediaGallery";
+  items: Array<{ media: { url: string }; description?: string }>;
+}
+
+export interface APIFileComponent {
+  type: "file";
+  file: { url: string };
+  name?: string;
+}
+
+export interface APISeparator {
+  type: "separator";
+  divider?: boolean;
+  spacing?: "small" | "large";
+}
+
+export interface APIContainer {
+  type: "container";
+  accentColor?: number;
+  components: APIComponent[];
 }

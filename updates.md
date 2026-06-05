@@ -1,114 +1,125 @@
-# <:tsunderecode:1512438074460602398> Tsundere Updates
+# Tsundere Updates
 
 > Major project updates written in Discord-friendly markdown.
 > Author: **Luckyz**
 
-## <:tsunderecode:1512438074460602398> Start to Now
+## Linux, Plugins, Package Manager, and Discord Tooling
 
 **Version:** `0.1.0`
 
-Tsundere started as a fun idea for a custom `.yuri` language and turned into a vibecoded Discord wrapper/runtime with real project tooling.
+This update moves active work onto the `linux-testing` branch and focuses on the parts that are about to matter most: Linux installs, package management, plugins, Discord tooling, moderation examples, and release publishing.
 
-### What Tsundere Is Now
+### Linux Branch
 
-- A `.yuri` language toolchain that transpiles to JavaScript or TypeScript.
-- A Discord-focused wrapper around familiar Discord.js-style ideas.
-- A CLI that can create, install, build, run, start, update packages, and open docs.
-- A local Node runtime so users do not have to manually run `node build/main.ts`.
-- A bundled `@tsundere/discord` runtime package for generated projects.
-- A VS Code/Cursor extension package with `.yuri` language support.
-- A local documentation site with search, light mode, dark mode, templates, examples, and Discord event docs.
+- Pulled the latest `TsundereLang/tsundere` code before applying new work.
+- Moved the current changes onto `linux-testing`.
+- Preserved the Linux platform helpers from the branch.
+- Kept the newer Protect and fingerprint commands working with the Linux branch code.
 
-### Runtime Updates
+### Package Manager Work
 
-```txt
-tsundere build
-```
+- Kept the new npm-first Tsundere package optimizer from the latest upstream pull.
+- `tsundere install`, `tsundere add`, `tsundere remove`, and `tsundere update` stay npm-compatible.
+- Added `tsundere store path`, `tsundere store prune`, and `tsundere cache clean` to the help flow.
+- Verified package optimizer unit tests.
 
-Now emits normal build files and runnable runtime output.
+### Plugin Install Flow
 
-```txt
-tsundere start
-```
+`tsundere plugin install` now works as an alias for plugin installs.
 
-Now runs the compiled app through Tsundere instead of making users call Node manually.
-
-```txt
-tsundere dev
-```
-
-Now builds, runs, watches `.yuri` files, and restarts the runtime on changes.
-
-### Discord Runtime Updates
-
-- Added a bundled local `@tsundere/discord` package.
-- New projects point to `file:.tsundere/runtime/discord`.
-- Existing projects can be fixed with:
+Supported inputs:
 
 ```powershell
-tsundere runtime install
-tsundere install
+tsundere plugin install protect
+tsundere plugin install @scope/my-plugin
+tsundere plugin install github:user/repo
+tsundere plugin install user/repo
+tsundere plugin install https://github.com/user/repo.git
+tsundere plugin install file:../my-plugin
 ```
 
-This fixes the common `ERR_MODULE_NOT_FOUND` issue for `@tsundere/discord`.
-
-### CLI Updates
-
-- `tsundere help` now shows the installed version.
-- `tsundere version` prints the current version and GitHub release repo.
-- `tsundere update <package>` is for updating project packages.
-- `tsundere updater` is for checking Tsundere/GitHub release info.
-- Package installs prefer pnpm, but fall back to npm when pnpm is missing.
-
-### Docs Updates
-
-- Added local GitBook-style HTML docs.
-- Added search.
-- Added light mode and dark mode.
-- Added lucide sun/moon theme toggle.
-- Added author attribution as **Luckyz**.
-- Added templates docs.
-- Added examples docs.
-- Added a deeper Discord events docs page.
-- Moved loose examples into `docs/examples`.
-- Removed unused Markdown planning docs.
-
-### Distribution Updates
-
-- Release builds now include:
-  - `tsundere-cli.tgz`
-  - `tsundere-discord.tgz`
-  - `vscode-tsundere-0.1.0.vsix`
-  - `install-tsundere.ps1`
-  - `installer.bat`
-- The installer opens documentation after install.
-- The updater folder is ready for future release automation.
-
-### Current Project Direction
-
-Tsundere is meant to stay fun, but not useless.
-
-The goal is:
+Short names still map to official-style packages:
 
 ```txt
-Discord.js-style power
-+ TypeScript familiarity
-+ cleaner bot workflow
-+ local docs and editor help
-= Tsundere
+protect -> @tsundere/plugin-protect
 ```
 
-### Planned Next Updates
+### Plugin Registry
 
-- Better YuriLS language server behavior.
-- More Discord IntelliSense from generated Discord package metadata.
-- Cleaner slash command sync.
-- Richer typed interactions and component helpers.
-- A real GitHub release updater flow.
-- Better packaged Windows installer.
-- More docs around commands, modals, selects, embeds, and deployment.
+- Created and pushed the initial `TsundereLang/tsundere-plugins` repo.
+- Added `registry.json`.
+- Added contribution docs.
+- Added example plugins for Protect and Discord intent diagnostics.
 
-## <:tsunderecode:1512438074460602398> Community
+### GitHub Organization Workflow
+
+- Moved the GitHub snake workflow to the correct repo: `TsundereLang/.github`.
+- Removed the snake workflow from the main Tsundere language repo.
+
+### Installers
+
+- Added Windows and Linux web installers:
+
+```powershell
+.\install-tsundere-windows.ps1
+```
+
+```sh
+sh ./install-tsundere-linux.sh
+```
+
+- Release bundles now include both web installers.
+- The release builder still includes the offline installer and VS Code extension.
+
+### Release Publishing
+
+- Updated the GitHub release script so it asks for the version.
+- It can rebuild before publishing.
+- It finds the release bundle automatically.
+- It generates release notes from `updates.md`.
+- It updates an existing GitHub release when the tag already exists.
+- It uploads the bundle with `--clobber` so releases can be refreshed without editing the script every time.
+
+### Discord Components
+
+- Added wrapper support for newer Discord component layouts:
+  - text display
+  - sections
+  - thumbnails
+  - media galleries
+  - file components
+  - separators
+  - containers
+- Existing button, select, modal, and row builders still work.
+
+### Tsundere GitBot
+
+The local `tsundere-gitbot` prototype now has:
+
+- GitHub OAuth linking.
+- Contributor role sync.
+- Admin-triggered GitHub role sync.
+- Bot status and activity config.
+- Configurable welcome embed.
+- Welcome autorole.
+- Contributor thank-you messages.
+- Basic moderation commands:
+  - ban
+  - kick
+  - mute
+  - warn
+  - warnings
+  - clearwarnings
+- Warning database stored as JSON for now, with a clean service boundary for a real database later.
+
+### Verification
+
+- Main TypeScript build passes.
+- VS Code extension build passes.
+- Package optimizer unit tests pass.
+- Release bundle rebuild passes.
+
+## Community
 
 Join the Discord:
 

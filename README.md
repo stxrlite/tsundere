@@ -38,6 +38,8 @@ Tsundere is not trying to be a giant prebuilt bot. It does not ship economy, tic
 - `tsundere dev` with build, run, watch, and restart
 - `tsundere build` plus `tsundere start`
 - npm-first package optimization with a reusable Tsundere store
+- `tsundere build --protect` for protected runtime builds
+- Build fingerprint metadata with `tsundere fingerprint inspect`
 - Local GitBook-style docs with search, light mode, and dark mode
 - VS Code and Cursor extension package
 - Discord IntelliSense metadata generation
@@ -148,6 +150,7 @@ tsundere create my-bot --template discord
 tsundere install
 tsundere dev
 tsundere build
+tsundere build --protect standard
 tsundere start
 tsundere docs
 tsundere version
@@ -159,6 +162,7 @@ tsundere cache clean
 tsundere runtime install
 tsundere commands sync
 tsundere types sync
+tsundere fingerprint inspect
 ```
 
 `tsundere updater` checks the configured GitHub release feed for newer Tsundere versions.
@@ -263,6 +267,7 @@ https://discord.gg/Gpxj5xVXBZ
 - Local docs: `docs/local/index.html`
 - Examples: `docs/examples`
 - Updates: `updates.md`
+- GitHub: `https://github.com/TsundereLang/tsundere`
 - Release bundle: `release`
 - VS Code extension: `packages/vscode-tsundere`
 - Discord runtime package: `packages/discord`
@@ -277,6 +282,10 @@ Current focus:
 - More complete `.yuri` parsing
 - Stronger type metadata from Discord packages
 - Cleaner command sync
+- Tsundere Protect improvements for protected Node.js builds
+- Discord intent and permission intelligence
+- Discord command visualizer planning
+- Compiler plugin marketplace design
 - Real GitHub release updates
 - Better installer packaging
 

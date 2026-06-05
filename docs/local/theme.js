@@ -30,7 +30,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const links = [
       ["templates.html", "Templates"],
       ["examples.html", "Examples"],
-      ["roadmap.html", "Roadmap"],
+      ["transition.html", "Transition"],
       ["versions.html", "Versions"]
     ];
     const current = location.pathname.split("/").pop();
@@ -48,6 +48,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     addDiscordDropdown(nav);
+    addRoadmapDropdown(nav);
   }
 
   addAuthor();
@@ -94,7 +95,7 @@ function addDiscordDropdown(nav) {
     return;
   }
   const current = location.pathname.split("/").pop();
-  const isDiscordPage = current === "discord.html" || current === "discord-events.html";
+  const isDiscordPage = current === "discord.html" || current === "discord-events.html" || current === "discord-layouts.html";
   const details = document.createElement("details");
   details.className = isDiscordPage ? "docs-dropdown active" : "docs-dropdown";
   details.open = isDiscordPage;
@@ -102,9 +103,31 @@ function addDiscordDropdown(nav) {
     <summary>Discord Guide</summary>
     <a href="discord.html" class="${current === "discord.html" ? "active" : ""}">Overview</a>
     <a href="discord-events.html" class="${current === "discord-events.html" ? "active" : ""}">Events</a>
+    <a href="discord-layouts.html" class="${current === "discord-layouts.html" ? "active" : ""}">Layouts</a>
   `;
   const discordLink = nav.querySelector('a[href="discord.html"]');
   discordLink?.replaceWith(details);
+}
+
+function addRoadmapDropdown(nav) {
+  if (nav.querySelector(".roadmap-dropdown")) {
+    return;
+  }
+  const current = location.pathname.split("/").pop();
+  const pages = new Set(["roadmap.html", "protect.html", "discord-intelligence.html", "visualizer.html", "plugins.html"]);
+  const isRoadmapPage = pages.has(current);
+  const details = document.createElement("details");
+  details.className = isRoadmapPage ? "docs-dropdown roadmap-dropdown active" : "docs-dropdown roadmap-dropdown";
+  details.open = isRoadmapPage;
+  details.innerHTML = `
+    <summary>Roadmap</summary>
+    <a href="roadmap.html" class="${current === "roadmap.html" ? "active" : ""}">Overview</a>
+    <a href="protect.html" class="${current === "protect.html" ? "active" : ""}">Protect</a>
+    <a href="discord-intelligence.html" class="${current === "discord-intelligence.html" ? "active" : ""}">Discord Intelligence</a>
+    <a href="visualizer.html" class="${current === "visualizer.html" ? "active" : ""}">Visualizer</a>
+    <a href="plugins.html" class="${current === "plugins.html" ? "active" : ""}">Plugins</a>
+  `;
+  nav.appendChild(details);
 }
 
 const docsIndex = [
@@ -121,7 +144,12 @@ const docsIndex = [
   {
     href: "discord.html",
     title: "Discord Guide",
-    text: "Discord guide covers Client setup, Intents, Guilds, GuildMessages, MessageContent, slash commands, interactions, buttons, selects, modals, embeds, Component.define, typed component data, command discovery config, and Discord diagnostics for custom IDs and embed limits."
+    text: "Discord guide covers Client setup, Intents, Guilds, GuildMessages, MessageContent, slash commands, interactions, buttons, selects, modals, embeds, Component.define, typed component data, command discovery config, route based commands, event layouts, and Discord diagnostics for custom IDs and embed limits."
+  },
+  {
+    href: "discord-layouts.html",
+    title: "Discord Layouts",
+    text: "Discord layouts explain recommended Tsundere project structure with src main.yuri, events, commands, components, modals, services, small main files, event files, command files, route-based commands, routeBased false, groups, interaction router style, button handlers, modal handlers, and command discovery."
   },
   {
     href: "discord-events.html",
@@ -131,7 +159,7 @@ const docsIndex = [
   {
     href: "cli.html",
     title: "CLI and Runtime",
-    text: "CLI commands include tsundere create, install, update package, dev, build, start, version, updater, commands sync, types sync, docs, runtime install, lint, format, test, and doctor. Runtime flow compiles .yuri into build and emits runnable JavaScript into .tsundere/runtime-build. tsundere start runs main.js through Node. tsundere dev watches and restarts."
+    text: "CLI commands include tsundere create, install, update package, dev, build, start, version, updater, commands sync, types sync, docs, runtime install, lint, format, test, doctor, plugin install, store path, store prune, and cache clean. Runtime flow compiles .yuri into build and emits runnable JavaScript into .tsundere/runtime-build. tsundere start runs main.js through Node. tsundere dev watches and restarts."
   },
   {
     href: "templates.html",
@@ -144,9 +172,14 @@ const docsIndex = [
     text: "Examples live in docs/examples. Example files include starter-bot.yuri, embeds.yuri, components.yuri, collectors.yuri, modal-flow.yuri, slash-options.yuri, typed-router.yuri, cache-and-helpers.yuri, prefix-utils.yuri, rest-commands.yuri, sharding-and-gateway.yuri, webhook-thread-audit.yuri, and command examples for ping, avatar, and admin ban."
   },
   {
+    href: "transition.html",
+    title: "Transition to Yuri",
+    text: "Transition to Yuri explains how JavaScript and Python developers should write Tsundere code. It covers imports, events, client.on, client.once, Slash.command, interaction replies, command discovery, builders, Discord layouts, runtime commands, tsundere dev, build, start, and how Yuri is not a one to one JavaScript copy."
+  },
+  {
     href: "updates.html",
     title: "Updates",
-    text: "Updates explain runtime, installer, docs, local Discord package, .tsundere/runtime-build, tsundere start, tsundere dev, @tsundere/discord, light mode, dark mode, docs search, examples move, tsundere version, tsundere updater, release bundle, tsundere-cli.tgz, tsundere-discord.tgz, VSIX, installer scripts, and planned updater flow."
+    text: "Updates explain linux-testing branch work, npm-first package optimizer, tsundere store path, cache clean, plugin install, GitHub plugin links, plugin registry, GitHub snake workflow, Windows web installer, Linux web installer, release publishing, Discord component layouts, GitBot moderation, warnings database, welcome autorole, and GitHub role sync."
   },
   {
     href: "versions.html",
@@ -156,7 +189,27 @@ const docsIndex = [
   {
     href: "roadmap.html",
     title: "Roadmap",
-    text: "Roadmap covers future compiler work, full AST parser, TypeScript AST emission, incremental build cache, source maps, strict diagnostics, Discord interaction narrowing, typed component payload serialization, schema-powered command options, command sync, Discord limits, less setup, more building, typed interactions without lock-in, real runtime, YuriLS workspace indexing, generated IntelliSense, auto imports, hover docs, Windows installer, npm packages, extension marketplace, versioned local docs, feature ideas, workflow pain points, docs requests, and Discord community feedback."
+    text: "Roadmap covers Tsundere Protect, Discord Intelligence, command visualizer, plugin marketplace, compiler work, full AST parser, TypeScript AST emission, incremental build cache, source maps, strict diagnostics, Discord interaction narrowing, command sync, Discord limits, less setup, more building, commercial-grade builds, real runtime, feature ideas, workflow pain points, docs requests, and Discord community feedback."
+  },
+  {
+    href: "protect.html",
+    title: "Tsundere Protect",
+    text: "Tsundere Protect is the Node.js protection pipeline. It includes standard, advanced, and maximum profiles, tsundere build --protect, source map stripping, string encoding, runtime integrity checks, generated guard code, seeded builds, build fingerprint metadata, tsundere fingerprint inspect, and future plans for control-flow flattening, asset protection, stronger string encryption, anti-debugging, customer licensing, and leak investigation."
+  },
+  {
+    href: "discord-intelligence.html",
+    title: "Discord Intelligence",
+    text: "Discord Intelligence covers intent analyzer, permission intelligence, role hierarchy analysis, invite scope analysis, compatibility checker, tsundere doctor, deprecated API detection, migration assistant, Discord version reports, hover warnings, required intents, GuildMessages, MessageContent, GuildMembers, GuildPresences, BanMembers, ModerateMembers, ManageChannels, OAuth scopes, permission dashboard, and deployment warnings."
+  },
+  {
+    href: "visualizer.html",
+    title: "Command Visualizer",
+    text: "Discord Command Visualizer is a planned VS Code panel for commands, command groups, subcommands, components, modals, events, click navigation, dependency graph, command to service to database to API relationships, search, dead command detection, duplicate detection, and source navigation."
+  },
+  {
+    href: "plugins.html",
+    title: "Plugin Marketplace",
+    text: "Compiler Plugin Marketplace covers TsundereLang tsundere-plugins, fork and pull request workflow, registry.json, plugin.json, tsundere plugin add, tsundere plugin install, GitHub plugin links, local plugin installs, framework plugins, database plugins, Discord plugins, compiler plugins, language plugins, parser hooks, AST hooks, type system hooks, compiler hooks, build pipeline hooks, language server hooks, CLI hooks, diagnostics, lint rules, code generation, and official registry plans."
   }
 ];
 

@@ -29,20 +29,17 @@
 
       <section class="mt-10 rounded-lg border border-slate-200 p-5">
         <p class="text-sm font-medium text-pink-700">Current update</p>
-        <h2 class="mt-2 text-2xl font-semibold">Runtime, installer, docs, and local Discord package</h2>
+        <h2 class="mt-2 text-2xl font-semibold">Linux, package manager, plugins, and Discord tooling</h2>
         <ul class="mt-4 list-disc space-y-2 pl-6 text-slate-700">
-          <li>Added a bundled `@tsundere/discord` package so projects can resolve the official Tsundere Discord wrapper locally.</li>
-          <li>Added `tsundere runtime install` to repair existing projects and write `.tsundere/runtime/discord`.</li>
-          <li>Changed `tsundere install` so it installs the local Discord runtime and falls back to npm when pnpm is missing.</li>
-          <li>Added a runnable Node runtime output folder at `.tsundere/runtime-build`.</li>
-          <li>Changed `tsundere start` so it runs through the Tsundere runtime instead of asking users to run Node manually.</li>
-          <li>Changed `tsundere dev` so it builds, runs, watches `.yuri` files, and restarts the runtime after changes.</li>
-          <li>Added these local HTML docs and made the installer open them after installation.</li>
-          <li>Added light and dark mode support for local docs.</li>
-          <li>Moved loose example files into `docs/examples` so the repo root stays clean.</li>
-          <li>Removed unused Markdown planning docs from the docs folder.</li>
-          <li>Added `tsundere version` and GitHub release checking through `tsundere updater`.</li>
-          <li>Updated the release builder so the release folder includes `tsundere-cli.tgz`, `tsundere-discord.tgz`, the VSIX, and installer scripts.</li>
+          <li>Moved the current work onto the `linux-testing` branch after pulling latest from GitHub.</li>
+          <li>Kept the npm-first package optimizer and store commands from upstream.</li>
+          <li>Added `tsundere plugin install` for official plugins, npm packages, local paths, and GitHub links.</li>
+          <li>Pushed the initial `TsundereLang/tsundere-plugins` registry repo.</li>
+          <li>Moved the GitHub snake workflow to `TsundereLang/.github`.</li>
+          <li>Added Windows and Linux web installers to the release bundle.</li>
+          <li>Updated release publishing so it prompts for version and updates existing releases.</li>
+          <li>Added newer Discord component layout builders.</li>
+          <li>Expanded the GitBot prototype with moderation commands, warning storage, welcome config, autorole, and GitHub role sync.</li>
         </ul>
       </section>
 

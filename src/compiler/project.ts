@@ -3,13 +3,18 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { spawn, type ChildProcess } from "node:child_process";
 import { dirname, join, relative, resolve } from "node:path";
 import ts from "typescript";
-import type { TsundereConfig } from "../types.js";
+import type { ProtectProfile, TsundereConfig } from "../types.js";
 import { compileYuri } from "./transpile.js";
 import { formatDiagnostic } from "./diagnostics.js";
 import { walk } from "../fs.js";
+import { protectJavaScript } from "./protect.js";
 
 interface BuildOptions {
   emitRuntime?: boolean;
+  protect?: {
+    profile: ProtectProfile;
+    seed?: string | undefined;
+  } | undefined;
 }
 
 export async function buildProject(config: TsundereConfig, cwd = process.cwd(), options: BuildOptions = {}): Promise<number> {
@@ -53,7 +58,7 @@ export async function buildProject(config: TsundereConfig, cwd = process.cwd(), 
     return 1;
   }
   if (options.emitRuntime ?? true) {
-    await emitNodeRuntime(config, cwd);
+    await emitNodeRuntime(config, cwd, options);
   }
   return 0;
 }
@@ -137,16 +142,17 @@ export async function runBuiltProject(config: TsundereConfig, cwd = process.cwd(
   return waitForProcess(spawnNode(entry, cwd));
 }
 
-async function emitNodeRuntime(config: TsundereConfig, cwd: string): Promise<void> {
+async function emitNodeRuntime(config: TsundereConfig, cwd: string, options: BuildOptions = {}): Promise<void> {
   const outRoot = resolve(cwd, config.outDir);
   const runtimeRoot = resolve(cwd, ".tsundere", "runtime-build");
   const files = await walk(outRoot, config.target === "typescript" ? ".ts" : ".js");
   await rm(runtimeRoot, { recursive: true, force: true });
+  const protectedBuilds: Array<{ file: string; buildId: string; profile: ProtectProfile }> = [];
   for (const file of files) {
     const source = await readFile(file, "utf8");
     const relativePath = relative(outRoot, file);
     const outputFile = join(runtimeRoot, relativePath.replace(/\.(ts|js)$/u, ".js"));
-    const output = config.target === "typescript"
+    let output = config.target === "typescript"
       ? ts.transpileModule(source, {
         compilerOptions: {
           module: ts.ModuleKind.ES2022,
@@ -158,8 +164,23 @@ async function emitNodeRuntime(config: TsundereConfig, cwd: string): Promise<voi
         fileName: file
       }).outputText
       : source;
+    if (options.protect) {
+      const result = protectJavaScript(output, options.protect);
+      output = result.code;
+      protectedBuilds.push({ file: relativePath.replace(/\.(ts|js)$/u, ".js"), buildId: result.buildId, profile: options.protect.profile });
+    }
     await mkdir(dirname(outputFile), { recursive: true });
     await writeFile(outputFile, output, "utf8");
+  }
+  if (options.protect) {
+    await writeFile(resolve(runtimeRoot, "tsundere-protect.json"), `${JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      profile: options.protect.profile,
+      seed: options.protect.seed ?? "auto",
+      files: protectedBuilds
+    }, null, 2)}\n`, "utf8");
+    const ids = protectedBuilds.map((build) => build.buildId).join(", ");
+    console.log(`Tsundere Protect ${options.protect.profile}: ${ids || "no runtime files"}`);
   }
 }
 

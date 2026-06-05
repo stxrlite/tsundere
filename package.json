@@ -5,7 +5,7 @@
   "homepage": "https://tsundere.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tsundere-dev/tsundere.git"
+    "url": "https://github.com/TsundereLang/tsundere.git"
   },
   "type": "module",
   "bin": {
@@ -53,7 +53,7 @@
   ],
   "license": "MIT",
   "tsundere": {
-    "githubRepo": "tsundere-dev/tsundere",
+    "githubRepo": "TsundereLang/tsundere",
     "docsEntry": "docs/local/index.html"
   },
   "dependencies": {

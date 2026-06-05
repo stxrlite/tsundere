@@ -1,0 +1,100 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Getting Started - Tsundere Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body class="bg-white text-slate-900">
+  <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <aside class="border-r border-slate-200 bg-slate-50 px-6 py-6 lg:sticky lg:top-0 lg:h-screen">
+      <div class="flex items-center gap-3">
+        <img src="../../assets/tsundere-logo.png" alt="Tsundere logo" class="h-12 w-12 rounded-lg object-cover">
+        <div><div class="text-lg font-semibold">Tsundere</div><div class="text-xs text-slate-500">Local Documentation</div></div>
+      </div>
+      <nav class="mt-8 space-y-1 text-sm">
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="index.html">Overview</a>
+        <a class="block rounded-md bg-pink-100 px-3 py-2 font-medium text-pink-800" href="getting-started.html">Getting Started</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="discord.html">Discord Guide</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="cli.html">CLI and Runtime</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="updates.html">Updates</a>
+      </nav>
+    </aside>
+    <main class="mx-auto w-full max-w-5xl px-6 py-10">
+      <h1 class="text-4xl font-bold tracking-tight">Getting Started</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">This page walks through installing Tsundere, creating a project, fixing existing projects, and understanding what files are generated.</p>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Install From a Release Zip</h2>
+        <p class="mt-3 text-slate-600">Unzip the release folder and run the installer script. The installer checks Node.js, installs pnpm when missing, installs the Tsundere CLI globally, installs the VS Code or Cursor extension when `code` is available, verifies the CLI, and opens these docs.</p>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>.\install-tsundere.ps1</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Create a Discord Project</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>tsundere create my-bot --template discord
+cd my-bot
+tsundere install
+tsundere dev</code></pre>
+        <p class="mt-4 text-slate-600">The Discord template creates `src/main.yuri`, `src/commands/ping.yuri`, `.env.example`, `tsundere.config.json`, and a project-local `.tsundere/runtime/discord` package.</p>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Add a Token</h2>
+        <p class="mt-3 text-slate-600">Copy `.env.example` to `.env`, then set your Discord token. The Tsundere runtime loads `.env` before starting your bot.</p>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>DISCORD_TOKEN=your-token-here</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Fix an Existing Project</h2>
+        <p class="mt-3 text-slate-600">If Node says it cannot find `@tsundere/discord`, install the bundled runtime into that project.</p>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>tsundere runtime install
+tsundere install</code></pre>
+        <p class="mt-4 text-slate-600">Your `package.json` should point to `file:.tsundere/runtime/discord`. After install, Node resolves `@tsundere/discord` from `node_modules` normally.</p>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Starter Bot</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>import { Client, Intents, Slash, Embed } from "@tsundere/discord"
+
+const client = new Client({
+  token: env.DISCORD_TOKEN,
+  intents: [Intents.Guilds, Intents.GuildMessages]
+})
+
+client.once("ready", () => {
+  log(`Online as ${client.user.tag}`)
+})
+
+client.on("interactionCreate", async (interaction) => {
+  if interaction.isCommand("ping") {
+    await interaction.reply({
+      embeds: [
+        Embed.create()
+          .title("Pong")
+          .description(`Latency: ${client.ping}ms`)
+          .color("#ff7ab6")
+          .toJSON()
+      ],
+      ephemeral: true
+    })
+  }
+})
+
+Slash.command("ping")
+  .description("Check bot latency")
+  .register(client)
+
+client.login()</code></pre>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+
+
+
+

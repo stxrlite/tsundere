@@ -1,0 +1,80 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Templates - Tsundere Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body class="bg-white text-slate-900">
+  <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <aside class="border-r border-slate-200 bg-slate-50 px-6 py-6 lg:sticky lg:top-0 lg:h-screen">
+      <div class="flex items-center gap-3">
+        <img src="../../assets/tsundere-logo.png" alt="Tsundere logo" class="h-12 w-12 rounded-lg object-cover">
+        <div><div class="text-lg font-semibold">Tsundere</div><div class="text-xs text-slate-500">Local Documentation</div></div>
+      </div>
+      <nav class="mt-8 space-y-1 text-sm">
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="index.html">Overview</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="getting-started.html">Getting Started</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="discord.html">Discord Guide</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="cli.html">CLI and Runtime</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="updates.html">Updates</a>
+      </nav>
+    </aside>
+    <main class="mx-auto w-full max-w-5xl px-6 py-10">
+      <h1 class="text-4xl font-bold tracking-tight">Templates</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">Templates are small starting points. They create the files needed to run, but they do not hide a full framework behind the project.</p>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Create Syntax</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>tsundere create my-bot --template discord
+tsundere create api --template rest
+tsundere create socket --template websocket
+tsundere create worker --template microservice
+tsundere create tool --template cli
+tsundere create scratch --template empty</code></pre>
+      </section>
+
+      <section class="mt-10 grid gap-4 md:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="text-xl font-semibold">Discord Bot</h2>
+          <p class="mt-3 text-slate-600">Creates a Discord client, ping command, command discovery config, `.env.example`, and the local `@tsundere/discord` runtime.</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="text-xl font-semibold">REST API</h2>
+          <p class="mt-3 text-slate-600">Creates a minimal Express health route. Use it when testing npm package compatibility or backend code.</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="text-xl font-semibold">WebSocket Server</h2>
+          <p class="mt-3 text-slate-600">Creates a small `ws` server starter. Useful for realtime experiments and bot dashboards.</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="text-xl font-semibold">Microservice</h2>
+          <p class="mt-3 text-slate-600">Creates a single async handler. Use it for jobs, queues, and small service modules.</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="text-xl font-semibold">CLI Tool</h2>
+          <p class="mt-3 text-slate-600">Creates a small command-line entry point. Good for local tools and scripts.</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="text-xl font-semibold">Empty Project</h2>
+          <p class="mt-3 text-slate-600">Creates the smallest possible `.yuri` project for testing compiler behavior.</p>
+        </div>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Generated Files</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>package.json
+tsundere.config.json
+.env.example
+.gitignore
+src/main.yuri
+.tsundere/runtime/discord/</code></pre>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+

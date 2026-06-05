@@ -1,0 +1,40 @@
+{
+  "scopeName": "source.yuri",
+  "patterns": [
+    { "include": "#keywords" },
+    { "include": "#strings" },
+    { "include": "#comments" },
+    { "include": "#types" }
+  ],
+  "repository": {
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.yuri",
+          "match": "\\b(import|export|from|const|let|class|interface|enum|async|await|if|else|match|return|throw|try|catch|finally|new|extends|implements)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "support.type.yuri",
+          "match": "\\b(string|number|boolean|bigint|unknown|never|void|null|undefined)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        { "name": "string.quoted.double.yuri", "begin": "\"", "end": "\"" },
+        { "name": "string.quoted.single.yuri", "begin": "'", "end": "'" },
+        { "name": "string.template.yuri", "begin": "`", "end": "`" }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        { "name": "comment.line.double-slash.yuri", "match": "//.*$" },
+        { "name": "comment.block.yuri", "begin": "/\\*", "end": "\\*/" }
+      ]
+    }
+  }
+}

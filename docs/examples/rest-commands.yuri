@@ -1,0 +1,40 @@
+import {
+  Client,
+  Intents,
+  Slash,
+  deleteSlashCommand,
+  registerSlashCommands,
+  syncGlobalCommands,
+  syncGuildCommands
+} from "@tsundere/discord"
+
+const client = new Client({
+  token: env.DISCORD_TOKEN,
+  intents: [Intents.Guilds]
+})
+
+const ping = Slash.command("ping")
+  .description("Check latency")
+  .toJSON()
+
+const echo = Slash.command("echo")
+  .description("Echo text")
+  .option("string", "text", "Text to echo", { required: true })
+  .toJSON()
+
+client.once("ready", async () => {
+  await registerSlashCommands(client, [ping, echo])
+  await syncGlobalCommands(client, [ping, echo])
+
+  if env.GUILD_ID {
+    await syncGuildCommands(client, [ping, echo], { guildId: env.GUILD_ID })
+  }
+
+  if env.DELETE_COMMAND_ID {
+    await deleteSlashCommand(client, env.DELETE_COMMAND_ID)
+  }
+})
+
+client.login()
+
+

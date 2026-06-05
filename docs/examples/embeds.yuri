@@ -1,0 +1,41 @@
+import { Client, Embed, Intents, Slash } from "@tsundere/discord"
+
+const client = new Client({
+  token: env.DISCORD_TOKEN,
+  intents: [Intents.Guilds]
+})
+
+Slash.command("about")
+  .description("Show bot information")
+  .register(client)
+
+client.on("interactionCreate", async (interaction) => {
+  if interaction.isCommand("about") {
+    const embed = Embed.create()
+      .title("Tsundere")
+      .description("A strict Discord-focused language for .yuri files.")
+      .color("#ff7ab6")
+      .author("Yui")
+      .thumbnail("https://tsundere.dev/logo.png")
+      .field("Runtime", "Node.js", true)
+      .field("API", "@tsundere/discord", true)
+      .footer("Built with Tsundere")
+      .timestamp()
+
+    const validation = embed.validate()
+    if !validation.ok {
+      await interaction.reply({
+        content: validation.errors.join("\\n"),
+        ephemeral: true
+      })
+      return
+    }
+
+    await interaction.reply({
+      embeds: [embed],
+      ephemeral: true
+    })
+  }
+})
+
+client.login()

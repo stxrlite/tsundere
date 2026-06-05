@@ -1,0 +1,84 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tsundere Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body class="bg-white text-slate-900">
+  <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <aside class="border-r border-slate-200 bg-slate-50 px-6 py-6 lg:sticky lg:top-0 lg:h-screen">
+      <div class="flex items-center gap-3">
+        <img src="../../assets/tsundere-logo.png" alt="Tsundere logo" class="h-12 w-12 rounded-lg object-cover">
+        <div>
+          <div class="text-lg font-semibold">Tsundere</div>
+          <div class="text-xs text-slate-500">Local Documentation</div>
+        </div>
+      </div>
+      <nav class="mt-8 space-y-1 text-sm">
+        <a class="block rounded-md bg-pink-100 px-3 py-2 font-medium text-pink-800" href="index.html">Overview</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="getting-started.html">Getting Started</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="discord.html">Discord Guide</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="cli.html">CLI and Runtime</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="updates.html">Updates</a>
+      </nav>
+    </aside>
+    <main class="mx-auto w-full max-w-5xl px-6 py-10">
+      <p class="text-sm font-medium text-pink-700">TypeScript familiarity. Discord-first tooling.</p>
+      <h1 class="mt-2 text-4xl font-bold tracking-tight">Build Discord bots with `.yuri` files and a real Node runtime.</h1>
+      <p class="mt-4 max-w-3xl text-lg leading-8 text-slate-600">Tsundere transpiles clean TypeScript-style `.yuri` code into JavaScript or TypeScript, installs a local `@tsundere/discord` runtime, and gives you one command for building, starting, developing, syncing commands, and opening docs.</p>
+
+      <section class="mt-10 grid gap-4 md:grid-cols-3">
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="font-semibold">Install</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-600">Use the release installer or install the CLI tarball globally. The installer opens these docs after setup.</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="font-semibold">Create</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-600">Create a Discord starter with a local runtime dependency and command discovery config already wired.</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="font-semibold">Run</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-600">Use `tsundere dev` while building and `tsundere start` in production. No manual `node build/main.ts` step.</p>
+        </div>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Quick Start</h2>
+        <div class="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-slate-950">
+          <pre class="overflow-x-auto p-5 text-sm text-slate-100"><code>tsundere create my-bot --template discord
+cd my-bot
+tsundere install
+tsundere dev</code></pre>
+        </div>
+        <p class="mt-4 text-slate-600">For an existing project that cannot resolve `@tsundere/discord`, run `tsundere runtime install` and then `tsundere install` from the project folder.</p>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Core Ideas</h2>
+        <div class="mt-4 space-y-4 text-slate-700">
+          <p><strong>.yuri syntax:</strong> familiar TypeScript-style code with Discord-focused compiler checks and editor support.</p>
+          <p><strong>Local runtime:</strong> Tsundere installs `@tsundere/discord` into `.tsundere/runtime/discord` so Node can resolve it without waiting on a public npm package.</p>
+          <p><strong>Optimized launcher:</strong> TypeScript output is converted into runnable ESM JavaScript under `.tsundere/runtime-build`, then launched by `tsundere start` or `tsundere dev`.</p>
+          <p><strong>Command discovery:</strong> command files under `src/commands` can be discovered automatically and converted into slash command metadata.</p>
+          <p><strong>Version-aware updates:</strong> `tsundere version` prints the installed CLI version, and `tsundere updater` checks the configured GitHub releases feed.</p>
+          <p><strong>Docs-first examples:</strong> sample `.yuri` files are kept in `docs/examples` so they remain close to the guides that explain them.</p>
+          <p><strong>Light and dark docs:</strong> local docs follow system preference and include a mode toggle for manual switching.</p>
+        </div>
+      </section>
+
+      <section class="mt-10 rounded-lg border border-pink-200 bg-pink-50 p-5">
+        <h2 class="text-xl font-semibold text-pink-900">What to Read Next</h2>
+        <p class="mt-2 text-pink-900">Start with Getting Started, then read CLI and Runtime. Use the Discord Guide when you are ready to build commands, embeds, interactions, and components.</p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,23 @@
+{
+  "name": "tsundere-app",
+  "source": "docs/examples",
+  "outDir": "build",
+  "target": "typescript",
+  "strict": true,
+  "sourceMaps": true,
+  "discord": {
+    "tokenEnv": "DISCORD_TOKEN",
+    "defaultIntents": ["Guilds"]
+  },
+  "commands": {
+    "discovery": true,
+    "routeBased": true,
+    "directory": "./docs/examples/commands",
+    "groups": {
+      "./docs/examples/commands/admin": {
+        "routeBased": true,
+        "groupName": "admin"
+      }
+    }
+  }
+}

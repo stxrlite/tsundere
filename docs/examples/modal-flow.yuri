@@ -1,0 +1,49 @@
+import {
+  Client,
+  Intents,
+  Modal,
+  Row,
+  Slash,
+  TextInput
+} from "@tsundere/discord"
+
+const client = new Client({
+  token: env.DISCORD_TOKEN,
+  intents: [Intents.Guilds]
+})
+
+const feedbackModal = Modal.create("feedback:create", "Send Feedback")
+  .row(
+    TextInput.short("title", "Title")
+      .required()
+      .placeholder("Short summary")
+  )
+  .row(
+    TextInput.paragraph("body", "Feedback")
+      .required()
+      .length(10, 1000)
+  )
+
+Slash.command("feedback")
+  .description("Open the feedback modal")
+  .register(client)
+
+client.on("interactionCreate", async (interaction) => {
+  if interaction.isCommand("feedback") {
+    await interaction.reply({
+      content: "Modal payload is ready.",
+      components: [Row.of()],
+      ephemeral: true
+    })
+    log(feedbackModal.toJSON())
+  }
+
+  if interaction.isModalSubmit("feedback:create") {
+    await interaction.reply({
+      content: "Thanks for the feedback.",
+      ephemeral: true
+    })
+  }
+})
+
+client.login()

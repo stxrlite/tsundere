@@ -1,0 +1,57 @@
+import {
+  Button,
+  Client,
+  Intents,
+  Row,
+  SelectMenu,
+  Slash,
+  parseCustomId
+} from "@tsundere/discord"
+
+const client = new Client({
+  token: env.DISCORD_TOKEN,
+  intents: [Intents.Guilds]
+})
+
+Slash.command("panel")
+  .description("Show a component panel")
+  .register(client)
+
+client.on("interactionCreate", async (interaction) => {
+  if interaction.isCommand("panel") {
+    await interaction.reply({
+      content: "Choose an action.",
+      components: [
+        Row.of(
+          Button.primary("panel:approve").label("Approve"),
+          Button.danger("panel:deny").label("Deny")
+        ),
+        Row.of(
+          SelectMenu.string("panel:color")
+            .placeholder("Pick a color")
+            .option("Pink", "pink")
+            .option("Blue", "blue")
+            .option("Mint", "mint")
+        )
+      ],
+      ephemeral: true
+    })
+  }
+
+  if interaction.isButton() {
+    const id = parseCustomId(interaction.customId ?? "")
+    await interaction.reply({
+      content: `Button action: ${id.action}`,
+      ephemeral: true
+    })
+  }
+
+  if interaction.isSelectMenu("panel:color") {
+    await interaction.reply({
+      content: "Selection received.",
+      ephemeral: true
+    })
+  }
+})
+
+client.login()

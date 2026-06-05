@@ -1,0 +1,10 @@
+{
+  "name": "@tsundere/testing",
+  "version": "0.1.0",
+  "description": "Testing primitives for Tsundere projects.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "license": "MIT"
+}

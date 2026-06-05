@@ -1,0 +1,77 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Updates - Tsundere Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body class="bg-white text-slate-900">
+  <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <aside class="border-r border-slate-200 bg-slate-50 px-6 py-6 lg:sticky lg:top-0 lg:h-screen">
+      <div class="flex items-center gap-3">
+        <img src="../../assets/tsundere-logo.png" alt="Tsundere logo" class="h-12 w-12 rounded-lg object-cover">
+        <div><div class="text-lg font-semibold">Tsundere</div><div class="text-xs text-slate-500">Local Documentation</div></div>
+      </div>
+      <nav class="mt-8 space-y-1 text-sm">
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="index.html">Overview</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="getting-started.html">Getting Started</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="discord.html">Discord Guide</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="cli.html">CLI and Runtime</a>
+        <a class="block rounded-md bg-pink-100 px-3 py-2 font-medium text-pink-800" href="updates.html">Updates</a>
+      </nav>
+    </aside>
+    <main class="mx-auto w-full max-w-5xl px-6 py-10">
+      <h1 class="text-4xl font-bold tracking-tight">Updates</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">This section explains what changed in the current local build and how to apply it to projects.</p>
+
+      <section class="mt-10 rounded-lg border border-slate-200 p-5">
+        <p class="text-sm font-medium text-pink-700">Current update</p>
+        <h2 class="mt-2 text-2xl font-semibold">Runtime, installer, docs, and local Discord package</h2>
+        <ul class="mt-4 list-disc space-y-2 pl-6 text-slate-700">
+          <li>Added a bundled `@tsundere/discord` package so projects can resolve the official Tsundere Discord wrapper locally.</li>
+          <li>Added `tsundere runtime install` to repair existing projects and write `.tsundere/runtime/discord`.</li>
+          <li>Changed `tsundere install` so it installs the local Discord runtime and falls back to npm when pnpm is missing.</li>
+          <li>Added a runnable Node runtime output folder at `.tsundere/runtime-build`.</li>
+          <li>Changed `tsundere start` so it runs through the Tsundere runtime instead of asking users to run Node manually.</li>
+          <li>Changed `tsundere dev` so it builds, runs, watches `.yuri` files, and restarts the runtime after changes.</li>
+          <li>Added these local HTML docs and made the installer open them after installation.</li>
+          <li>Added light and dark mode support for local docs.</li>
+          <li>Moved loose example files into `docs/examples` so the repo root stays clean.</li>
+          <li>Removed unused Markdown planning docs from the docs folder.</li>
+          <li>Added `tsundere version` and GitHub release checking through `tsundere updater`.</li>
+          <li>Updated the release builder so the release folder includes `tsundere-cli.tgz`, `tsundere-discord.tgz`, the VSIX, and installer scripts.</li>
+        </ul>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">How to Update a Project</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>tsundere runtime install
+tsundere install
+tsundere build
+tsundere start</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">How to Build a Release</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>npm run dist:release</code></pre>
+        <p class="mt-4 text-slate-600">Send the generated `release` folder to testers. They can run `installer.bat` or `install-tsundere.ps1`.</p>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Planned Update Flow</h2>
+        <div class="mt-4 space-y-4 text-slate-700">
+          <p>Future versions should let `tsundere updater self` download the newest GitHub release, verify the package, install the CLI, refresh the VS Code extension, and reopen the local docs.</p>
+          <p>The current release checker is intentionally conservative. It tells you what version is available and where to download it without replacing files automatically.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+
+
+
+

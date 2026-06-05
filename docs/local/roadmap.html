@@ -1,0 +1,107 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roadmap - Tsundere Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body class="bg-white text-slate-900">
+  <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <aside class="border-r border-slate-200 bg-slate-50 px-6 py-6 lg:sticky lg:top-0 lg:h-screen">
+      <div class="flex items-center gap-3">
+        <img src="../../assets/tsundere-logo.png" alt="Tsundere logo" class="h-12 w-12 rounded-lg object-cover">
+        <div><div class="text-lg font-semibold">Tsundere</div><div class="text-xs text-slate-500">Local Documentation</div></div>
+      </div>
+      <nav class="mt-8 space-y-1 text-sm">
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="index.html">Overview</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="getting-started.html">Getting Started</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="discord.html">Discord Guide</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="cli.html">CLI and Runtime</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="updates.html">Updates</a>
+      </nav>
+    </aside>
+    <main class="mx-auto w-full max-w-5xl px-6 py-10">
+      <h1 class="text-4xl font-bold tracking-tight">Roadmap</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">Tsundere is meant to become a serious Discord-first language ecosystem without becoming a locked-in bot framework.</p>
+
+      <section class="mt-10 grid gap-4 md:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="text-xl font-semibold">Compiler</h2>
+          <ul class="mt-3 list-disc space-y-2 pl-6 text-slate-700">
+            <li>Full AST parser for `.yuri` files.</li>
+            <li>Cleaner TypeScript AST emission.</li>
+            <li>Incremental build cache.</li>
+            <li>Better source maps from `.yuri` to runtime JavaScript.</li>
+            <li>More precise strict diagnostics.</li>
+          </ul>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="text-xl font-semibold">Discord</h2>
+          <ul class="mt-3 list-disc space-y-2 pl-6 text-slate-700">
+            <li>Richer interaction narrowing.</li>
+            <li>Typed component payload serialization.</li>
+            <li>Schema-powered command options.</li>
+            <li>Better command sync for guild and global commands.</li>
+            <li>More Discord limit checks at compile time.</li>
+          </ul>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="text-xl font-semibold">Editor</h2>
+          <ul class="mt-3 list-disc space-y-2 pl-6 text-slate-700">
+            <li>YuriLS workspace indexing.</li>
+            <li>Generated IntelliSense from installed Discord packages.</li>
+            <li>Auto imports for `@tsundere/discord` symbols.</li>
+            <li>Hover docs with required intents and permissions.</li>
+            <li>Command and component snippets.</li>
+          </ul>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-5">
+          <h2 class="text-xl font-semibold">Distribution</h2>
+          <ul class="mt-3 list-disc space-y-2 pl-6 text-slate-700">
+            <li>GitHub release updater.</li>
+            <li>Windows installer.</li>
+            <li>Published npm packages.</li>
+            <li>Extension marketplace release.</li>
+            <li>Versioned local docs.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Future Ideas</h2>
+        <div class="mt-4 grid gap-4 md:grid-cols-2">
+          <div class="rounded-lg border border-slate-200 p-5">
+            <h3 class="font-semibold">Less Setup, More Building</h3>
+            <p class="mt-2 text-slate-600">A new bot should feel ready in minutes: create the project, add a token, write commands, and run. No deploy-command script maze, no mystery loader folder, no fragile custom ID parsing.</p>
+          </div>
+          <div class="rounded-lg border border-slate-200 p-5">
+            <h3 class="font-semibold">Discord Knowledge in the Tooling</h3>
+            <p class="mt-2 text-slate-600">Tsundere should know Discord limits before runtime: embed sizes, modal inputs, button rows, required intents, permissions, option types, and stale command state.</p>
+          </div>
+          <div class="rounded-lg border border-slate-200 p-5">
+            <h3 class="font-semibold">Typed Interactions Without Lock-In</h3>
+            <p class="mt-2 text-slate-600">The goal is typed buttons, selects, modals, routes, and command options while still letting developers own the actual bot logic.</p>
+          </div>
+          <div class="rounded-lg border border-slate-200 p-5">
+            <h3 class="font-semibold">A Runtime That Feels Real</h3>
+            <p class="mt-2 text-slate-600">Build, start, dev, docs, package updates, version checks, command sync, and diagnostics should all live behind one clean CLI.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-10 rounded-lg border border-pink-200 bg-pink-50 p-5">
+        <h2 class="text-2xl font-semibold text-pink-900">Got an idea?</h2>
+        <p class="mt-3 text-pink-900">If you have a feature idea, Discord workflow pain point, docs request, or weird bot use case Tsundere should support, join the Discord and throw it in.</p>
+        <a class="mt-4 inline-flex rounded-md bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-700" href="https://discord.gg/Gpxj5xVXBZ">Join the Discord</a>
+      </section>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+
+

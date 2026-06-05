@@ -1,0 +1,63 @@
+{
+  "name": "@tsundere/cli",
+  "version": "0.1.0",
+  "description": "Tsundere is a strict Discord-focused language for .yuri files that transpiles to JavaScript/TypeScript.",
+  "homepage": "https://tsundere.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tsundere-dev/tsundere.git"
+  },
+  "type": "module",
+  "bin": {
+    "tsundere": "./dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./discord": "./dist/discord/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/prepare-discord-runtime.mjs",
+    "dev": "node dist/cli.js dev",
+    "start": "node dist/cli.js start",
+    "format": "node dist/cli.js format",
+    "lint": "node dist/cli.js lint",
+    "commands:sync": "node dist/cli.js commands sync",
+    "test": "node dist/cli.js test",
+    "doctor": "node dist/cli.js doctor",
+    "vscode:build": "npm --prefix packages/vscode-tsundere run build",
+    "vscode:package": "npm --prefix packages/vscode-tsundere run package",
+    "dist:release": "powershell -ExecutionPolicy Bypass -File scripts/build-distribution.ps1"
+  },
+  "files": [
+    "dist",
+    "packages/discord",
+    "templates",
+    "assets",
+    "docs",
+    "README.md",
+    "updates.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "discord",
+    "language",
+    "typescript",
+    "transpiler",
+    "bot"
+  ],
+  "license": "MIT",
+  "tsundere": {
+    "githubRepo": "tsundere-dev/tsundere",
+    "docsEntry": "docs/local/index.html"
+  },
+  "dependencies": {
+    "discord.js": "^14.26.4",
+    "typescript": "^5.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}

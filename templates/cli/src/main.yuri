@@ -1,0 +1,5 @@
+const [command = "help"] = process.argv.slice(2)
+
+if command == "help" {
+  log("Available commands: help")
+}

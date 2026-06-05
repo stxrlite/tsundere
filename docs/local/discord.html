@@ -1,0 +1,117 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Discord Guide - Tsundere Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body class="bg-white text-slate-900">
+  <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <aside class="border-r border-slate-200 bg-slate-50 px-6 py-6 lg:sticky lg:top-0 lg:h-screen">
+      <div class="flex items-center gap-3">
+        <img src="../../assets/tsundere-logo.png" alt="Tsundere logo" class="h-12 w-12 rounded-lg object-cover">
+        <div><div class="text-lg font-semibold">Tsundere</div><div class="text-xs text-slate-500">Local Documentation</div></div>
+      </div>
+      <nav class="mt-8 space-y-1 text-sm">
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="index.html">Overview</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="getting-started.html">Getting Started</a>
+        <a class="block rounded-md bg-pink-100 px-3 py-2 font-medium text-pink-800" href="discord.html">Discord Guide</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="cli.html">CLI and Runtime</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="updates.html">Updates</a>
+      </nav>
+    </aside>
+    <main class="mx-auto w-full max-w-5xl px-6 py-10">
+      <h1 class="text-4xl font-bold tracking-tight">Discord Guide</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">Tsundere is not a bot framework. It gives you typed Discord API bindings, builders, interaction helpers, command registration utilities, diagnostics, and editor intelligence.</p>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Client Setup</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>import { Client, Intents } from "@tsundere/discord"
+
+const client = new Client({
+  token: env.DISCORD_TOKEN,
+  intents: [
+    Intents.Guilds,
+    Intents.GuildMessages,
+    Intents.MessageContent
+  ]
+})
+
+client.login()</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Events</h2>
+        <p class="mt-3 text-slate-600">The extension suggests Discord event names when you type `client.on("`. Selecting an event should provide the callback shape and hover documentation.</p>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>client.on("messageCreate", async (message) => {
+  if (message.author.bot) {
+    return
+  }
+
+  if (message.content == "!ping") {
+    await message.reply("pong")
+  }
+})</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Slash Commands</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>import { Slash } from "@tsundere/discord"
+
+export default Slash.command("avatar")
+  .description("Show a user's avatar")
+  .option("user", "target", "User to inspect", { required: false })</code></pre>
+        <p class="mt-4 text-slate-600">With command discovery enabled, files in `src/commands` are indexed by `tsundere dev` and `tsundere commands sync`.</p>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Embeds</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>const card = Embed.create()
+  .title("Status")
+  .description("The bot is online")
+  .color("#ff7ab6")
+  .timestamp()
+  .toJSON()</code></pre>
+        <p class="mt-4 text-slate-600">Tsundere diagnostics warn about Discord limits such as long embed titles, long descriptions, custom ID limits, and common intent mistakes.</p>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Typed Components</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>import { Component, Button } from "@tsundere/discord"
+
+const BanButton = Component.define&lt;{
+  userId: string
+}&gt;("ban")
+
+const button = Button.danger(
+  BanButton.create({ userId: member.id })
+).label("Ban")</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Command Discovery Config</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>{
+  "commands": {
+    "discovery": true,
+    "routeBased": true,
+    "directory": "./src/commands",
+    "groups": {
+      "./src/commands/admin": {
+        "routeBased": true,
+        "groupName": "admin"
+      }
+    }
+  }
+}</code></pre>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+
+
+
+

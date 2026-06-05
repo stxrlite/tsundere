@@ -1,0 +1,28 @@
+import { Client, Intents, Partials } from "@tsundere/discord"
+
+const client = new Client({
+  token: env.DISCORD_TOKEN,
+  intents: [
+    Intents.Guilds,
+    Intents.GuildMessages,
+    Intents.GuildMembers,
+    Intents.GuildVoiceStates
+  ],
+  partials: [
+    Partials.Channel,
+    Partials.Message,
+    Partials.GuildMember
+  ],
+  shards: "auto"
+})
+
+client.once("ready", async () => {
+  const shard = await client.shard(0)
+  log(`Shard ${shard.id}: ${shard.status} (${shard.latency}ms)`)
+})
+
+client.on("error", (error) => {
+  log(error.message)
+})
+
+client.login()

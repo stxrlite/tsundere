@@ -1,0 +1,84 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CLI and Runtime - Tsundere Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body class="bg-white text-slate-900">
+  <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <aside class="border-r border-slate-200 bg-slate-50 px-6 py-6 lg:sticky lg:top-0 lg:h-screen">
+      <div class="flex items-center gap-3">
+        <img src="../../assets/tsundere-logo.png" alt="Tsundere logo" class="h-12 w-12 rounded-lg object-cover">
+        <div><div class="text-lg font-semibold">Tsundere</div><div class="text-xs text-slate-500">Local Documentation</div></div>
+      </div>
+      <nav class="mt-8 space-y-1 text-sm">
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="index.html">Overview</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="getting-started.html">Getting Started</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="discord.html">Discord Guide</a>
+        <a class="block rounded-md bg-pink-100 px-3 py-2 font-medium text-pink-800" href="cli.html">CLI and Runtime</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="updates.html">Updates</a>
+      </nav>
+    </aside>
+    <main class="mx-auto w-full max-w-5xl px-6 py-10">
+      <h1 class="text-4xl font-bold tracking-tight">CLI and Runtime</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">The CLI is the normal entry point for Tsundere projects. You should not need to run `node build/main.ts` manually.</p>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Runtime Flow</h2>
+        <div class="mt-4 rounded-lg border border-slate-200 p-5 text-slate-700">
+          <p>`tsundere build` compiles `.yuri` files into `build/` and emits runnable JavaScript into `.tsundere/runtime-build/`.</p>
+          <p class="mt-3">`tsundere start` runs `.tsundere/runtime-build/main.js`. If runtime output is missing, it builds first.</p>
+          <p class="mt-3">`tsundere dev` builds, syncs command metadata, starts the runtime, watches `.yuri` files, and restarts the runtime after changes.</p>
+        </div>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Commands</h2>
+        <div class="mt-4 overflow-hidden rounded-lg border border-slate-200">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600"><tr><th class="px-4 py-3">Command</th><th class="px-4 py-3">Use</th></tr></thead>
+            <tbody class="divide-y divide-slate-200">
+              <tr><td class="px-4 py-3 font-mono">tsundere create</td><td class="px-4 py-3">Create a project from a template.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">tsundere install</td><td class="px-4 py-3">Install dependencies and repair the bundled Discord runtime when needed.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">tsundere update [package]</td><td class="px-4 py-3">Update project dependencies through the package manager.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">tsundere dev</td><td class="px-4 py-3">Build, run, watch, and restart.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">tsundere build</td><td class="px-4 py-3">Compile `.yuri` files and emit runnable runtime output.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">tsundere start</td><td class="px-4 py-3">Run the compiled app through the Tsundere runtime.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">tsundere version</td><td class="px-4 py-3">Print the installed Tsundere version.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">tsundere updater</td><td class="px-4 py-3">Check the configured GitHub releases feed for CLI updates.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">tsundere commands sync</td><td class="px-4 py-3">Generate command discovery metadata.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">tsundere types sync</td><td class="px-4 py-3">Generate Discord IntelliSense metadata.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">tsundere docs</td><td class="px-4 py-3">Open these local docs.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Configuration</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>{
+  "name": "my-bot",
+  "source": "src",
+  "outDir": "build",
+  "target": "typescript",
+  "strict": true,
+  "sourceMaps": true,
+  "runtime": "node",
+  "discord": {
+    "tokenEnv": "DISCORD_TOKEN",
+    "defaultIntents": ["Guilds"]
+  }
+}</code></pre>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+
+
+
+

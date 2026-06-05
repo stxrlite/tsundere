@@ -1,0 +1,3 @@
+export async function handleJob(input: { id: string }) {
+  return { id: input.id, ok: true }
+}

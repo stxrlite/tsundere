@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+.tsundere/
+.yuri-cache/
+.npm-cache/
+release/
+.env
+.env.*
+!.env.example
+*.log
+*.tgz
+*.vsix
+*.tsbuildinfo
+coverage/
+.DS_Store
+Thumbs.db

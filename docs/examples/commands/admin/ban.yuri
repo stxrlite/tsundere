@@ -1,0 +1,6 @@
+import { Slash } from "@tsundere/discord"
+
+export default Slash.command("ban")
+  .description("Ban a member")
+  .option("user", "target", "Member to ban", { required: true })
+  .option("string", "reason", "Reason for the ban")

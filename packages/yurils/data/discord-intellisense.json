@@ -1,0 +1,74 @@
+{
+  "activationImports": ["@tsundere/discord"],
+  "events": [
+    { "name": "ready", "detail": "Client is connected and ready.", "requiredIntents": [] },
+    { "name": "interactionCreate", "detail": "An interaction was created.", "requiredIntents": ["Guilds"] },
+    { "name": "messageCreate", "detail": "A message was created.", "requiredIntents": ["GuildMessages"] },
+    { "name": "messageDelete", "detail": "A message was deleted.", "requiredIntents": ["GuildMessages"] },
+    { "name": "messageUpdate", "detail": "A message was updated.", "requiredIntents": ["GuildMessages"] },
+    { "name": "guildCreate", "detail": "The bot joined or loaded a guild.", "requiredIntents": ["Guilds"] },
+    { "name": "guildDelete", "detail": "The bot left or lost access to a guild.", "requiredIntents": ["Guilds"] },
+    { "name": "guildMemberAdd", "detail": "A member joined a guild.", "requiredIntents": ["GuildMembers"] },
+    { "name": "guildMemberRemove", "detail": "A member left a guild.", "requiredIntents": ["GuildMembers"] },
+    { "name": "channelCreate", "detail": "A channel was created.", "requiredIntents": ["Guilds"] },
+    { "name": "channelDelete", "detail": "A channel was deleted.", "requiredIntents": ["Guilds"] },
+    { "name": "roleCreate", "detail": "A role was created.", "requiredIntents": ["Guilds"] },
+    { "name": "roleDelete", "detail": "A role was deleted.", "requiredIntents": ["Guilds"] },
+    { "name": "voiceStateUpdate", "detail": "A member changed voice state.", "requiredIntents": ["GuildVoiceStates"] },
+    { "name": "threadCreate", "detail": "A thread was created.", "requiredIntents": ["Guilds"] },
+    { "name": "threadDelete", "detail": "A thread was deleted.", "requiredIntents": ["Guilds"] },
+    { "name": "error", "detail": "The client emitted an error.", "requiredIntents": [] }
+  ],
+  "interactionMembers": [
+    { "label": "reply", "insertText": "reply({ ${1:content}: ${2:\"Hello\"} })", "detail": "reply(response: InteractionResponse): Promise<void>", "docs": "Send the initial interaction response. Must be called within Discord's initial response window unless the interaction was deferred." },
+    { "label": "deferReply", "insertText": "deferReply({ ephemeral: ${1:true} })", "detail": "deferReply(options?: ReplyOptions): Promise<void>", "docs": "Acknowledge the interaction and send the response later with editReply or followUp." },
+    { "label": "editReply", "insertText": "editReply({ ${1:content}: ${2:\"Updated\"} })", "detail": "editReply(response: InteractionResponse): Promise<void>", "docs": "Edit a deferred or previous interaction response." },
+    { "label": "followUp", "insertText": "followUp({ ${1:content}: ${2:\"More\"} })", "detail": "followUp(response: InteractionResponse): Promise<void>", "docs": "Send an additional interaction response." },
+    { "label": "deleteReply", "insertText": "deleteReply()", "detail": "deleteReply(): Promise<void>", "docs": "Delete the original interaction response." },
+    { "label": "isCommand", "insertText": "isCommand(${1:\"name\"})", "detail": "isCommand(name?: string): boolean", "docs": "Narrow this interaction to a slash command interaction." },
+    { "label": "isButton", "insertText": "isButton(${1:\"custom:id\"})", "detail": "isButton(customId?: string): boolean", "docs": "Narrow this interaction to a button interaction." },
+    { "label": "isModal", "insertText": "isModal()", "detail": "isModal(): boolean", "docs": "Narrow this interaction to a modal submit interaction." },
+    { "label": "isSelectMenu", "insertText": "isSelectMenu(${1:\"custom:id\"})", "detail": "isSelectMenu(customId?: string): boolean", "docs": "Narrow this interaction to a select menu interaction." },
+    { "label": "user", "detail": "User | undefined", "docs": "User who invoked the interaction." },
+    { "label": "guild", "detail": "Guild | undefined", "docs": "Guild where the interaction happened, when available." },
+    { "label": "channel", "detail": "Channel | undefined", "docs": "Channel where the interaction happened, when available." },
+    { "label": "member", "detail": "Member | undefined", "docs": "Guild member who invoked the interaction, when available." },
+    { "label": "commandName", "detail": "string | undefined", "docs": "Slash command name." },
+    { "label": "options", "detail": "InteractionOption[] | undefined", "docs": "Parsed interaction options." },
+    { "label": "customId", "detail": "string | undefined", "docs": "Component or modal custom ID." }
+  ],
+  "slashMethods": [
+    "description()", "option()", "subcommand()", "group()", "permission()", "guildOnly()", "nsfw()", "autocomplete()", "register()"
+  ],
+  "buttonFactories": [
+    "primary()", "secondary()", "success()", "danger()", "link()"
+  ],
+  "embedMethods": [
+    "title()", "description()", "color()", "field()", "fields()", "footer()", "author()", "thumbnail()", "image()", "timestamp()", "url()", "validate()"
+  ],
+  "autoImports": {
+    "Client": "@tsundere/discord",
+    "Embed": "@tsundere/discord",
+    "Button": "@tsundere/discord",
+    "Slash": "@tsundere/discord",
+    "ActionRow": "@tsundere/discord",
+    "Modal": "@tsundere/discord",
+    "SelectMenu": "@tsundere/discord",
+    "TextInput": "@tsundere/discord",
+    "Intents": "@tsundere/discord",
+    "Partials": "@tsundere/discord"
+  },
+  "diagnostics": [
+    { "code": "DISCORD001", "message": "Invalid Discord event name.", "severity": "error" },
+    { "code": "DISCORD002", "message": "This event requires an intent that is not configured.", "severity": "warning" },
+    { "code": "DISCORD003", "message": "Invalid permission flag.", "severity": "error" },
+    { "code": "DISCORD004", "message": "Invalid slash command option type.", "severity": "error" },
+    { "code": "DISCORD005", "message": "Embed exceeds Discord limits.", "severity": "error" },
+    { "code": "DISCORD006", "message": "Modal has too many text inputs.", "severity": "error" },
+    { "code": "DISCORD007", "message": "Button row has too many buttons.", "severity": "error" },
+    { "code": "DISCORD008", "message": "Interaction may miss Discord's reply/defer timing window.", "severity": "warning" },
+    { "code": "DISCORD009", "message": "Ephemeral option is only valid for interaction responses.", "severity": "warning" },
+    { "code": "DISCORD010", "message": "Custom ID exceeds Discord's 100 character limit.", "severity": "error" }
+  ],
+  "narrowingGuards": ["isCommand", "isButton", "isModal", "isSelectMenu", "isAutocomplete"]
+}

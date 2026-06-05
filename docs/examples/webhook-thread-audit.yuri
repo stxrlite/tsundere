@@ -1,0 +1,29 @@
+import {
+  AuditLogs,
+  Invites,
+  Threads,
+  Webhooks,
+  VoiceStates
+} from "@tsundere/discord"
+
+const guildId = "100000000000000000"
+const webhookId = "200000000000000000"
+const webhookToken = "token"
+
+log(Webhooks.url(webhookId, webhookToken))
+log(Invites.url("abc123"))
+log(Threads.archiveReason("300000000000000000"))
+log(AuditLogs.route(guildId))
+
+const inVoice = VoiceStates.inChannel({
+  id: "400000000000000000",
+  guildId,
+  user: {
+    id: "400000000000000000",
+    username: "yui",
+    tag: "yui#0001"
+  },
+  roles: []
+}, "500000000000000000")
+
+log(inVoice)

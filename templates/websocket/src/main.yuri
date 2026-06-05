@@ -1,0 +1,7 @@
+import { WebSocketServer } from "ws"
+
+const server = new WebSocketServer({ port: Number(env.PORT ?? 3000) })
+
+server.on("connection", (socket) => {
+  socket.send("Tsundere WebSocket online")
+})

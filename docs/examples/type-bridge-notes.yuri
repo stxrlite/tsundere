@@ -1,0 +1,38 @@
+import { Client, Embed, Intents, Slash } from "@tsundere/discord"
+
+// Run this before opening a Discord project in Cursor or VS Code:
+//
+//   tsundere types sync
+//
+// YuriLS and the extension can use generated metadata from:
+//
+//   .yuri-cache/discord.types.json
+//   .yuri-cache/discord.events.json
+//   .yuri-cache/discord.builders.json
+//   .yuri-cache/discord.imports.json
+//   .yuri-cache/discord.docs.json
+
+const client = new Client({
+  token: env.DISCORD_TOKEN,
+  intents: [Intents.Guilds]
+})
+
+client.on("interactionCreate", async (interaction) => {
+  if interaction.isCommand("metadata") {
+    await interaction.reply({
+      embeds: [
+        Embed.create()
+          .title("Metadata Ready")
+          .description("Discord types are mapped into Tsundere-style signatures.")
+          .color("#ff7ab6")
+      ],
+      ephemeral: true
+    })
+  }
+})
+
+Slash.command("metadata")
+  .description("Check generated type bridge metadata")
+  .register(client)
+
+client.login()

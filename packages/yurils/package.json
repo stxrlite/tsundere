@@ -1,0 +1,10 @@
+{
+  "name": "@tsundere/yurils",
+  "version": "0.1.0",
+  "description": "YuriLS language server for Tsundere .yuri files.",
+  "type": "module",
+  "bin": {
+    "yurils": "./src/server.js"
+  },
+  "license": "MIT"
+}

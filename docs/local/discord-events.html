@@ -1,0 +1,175 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Discord Events - Tsundere Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body class="bg-white text-slate-900">
+  <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <aside class="border-r border-slate-200 bg-slate-50 px-6 py-6 lg:sticky lg:top-0 lg:h-screen">
+      <div class="flex items-center gap-3">
+        <img src="../../assets/tsundere-logo.png" alt="Tsundere logo" class="h-12 w-12 rounded-lg object-cover">
+        <div><div class="text-lg font-semibold">Tsundere</div><div class="text-xs text-slate-500">Local Documentation</div></div>
+      </div>
+      <nav class="mt-8 space-y-1 text-sm">
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="index.html">Overview</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="getting-started.html">Getting Started</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="discord.html">Discord Guide</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="cli.html">CLI and Runtime</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="updates.html">Updates</a>
+      </nav>
+    </aside>
+    <main class="mx-auto w-full max-w-5xl px-6 py-10">
+      <h1 class="text-4xl font-bold tracking-tight">Discord Events</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">Events are how your bot reacts to Discord. Tsundere keeps the Discord.js-style listener shape, then adds event autocomplete, intent hints, typed parameters, and hover docs.</p>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Basic Pattern</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>client.on("messageCreate", async (message) => {
+  if (message.author.bot) {
+    return
+  }
+
+  if (message.content == "!ping") {
+    await message.reply("pong")
+  }
+})</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Supported Event Matrix</h2>
+        <div class="mt-4 overflow-hidden rounded-lg border border-slate-200">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600"><tr><th class="px-4 py-3">Event</th><th class="px-4 py-3">Callback Data</th><th class="px-4 py-3">Intent Hint</th><th class="px-4 py-3">Best Use</th></tr></thead>
+            <tbody class="divide-y divide-slate-200">
+              <tr><td class="px-4 py-3 font-mono">ready</td><td class="px-4 py-3">none</td><td class="px-4 py-3">gateway connection</td><td class="px-4 py-3">Startup logs and boot tasks.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">interactionCreate</td><td class="px-4 py-3">interaction</td><td class="px-4 py-3">Guilds</td><td class="px-4 py-3">Slash commands, buttons, modals, selects.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">messageCreate</td><td class="px-4 py-3">message</td><td class="px-4 py-3">GuildMessages, MessageContent</td><td class="px-4 py-3">Prefix utilities and message reactions.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">messageUpdate</td><td class="px-4 py-3">oldMessage, newMessage</td><td class="px-4 py-3">GuildMessages</td><td class="px-4 py-3">Edit logs and cache reconciliation.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">messageDelete</td><td class="px-4 py-3">message</td><td class="px-4 py-3">GuildMessages</td><td class="px-4 py-3">Delete logs and cleanup.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">guildCreate</td><td class="px-4 py-3">guild</td><td class="px-4 py-3">Guilds</td><td class="px-4 py-3">Join setup and command sync.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">guildDelete</td><td class="px-4 py-3">guild</td><td class="px-4 py-3">Guilds</td><td class="px-4 py-3">Cache cleanup and metrics.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">guildMemberAdd</td><td class="px-4 py-3">member</td><td class="px-4 py-3">GuildMembers</td><td class="px-4 py-3">Welcome flows and member sync.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">guildMemberRemove</td><td class="px-4 py-3">member</td><td class="px-4 py-3">GuildMembers</td><td class="px-4 py-3">Leave logs and cleanup.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">guildBanAdd</td><td class="px-4 py-3">ban</td><td class="px-4 py-3">GuildModeration</td><td class="px-4 py-3">Ban logs and audit review.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">guildBanRemove</td><td class="px-4 py-3">ban</td><td class="px-4 py-3">GuildModeration</td><td class="px-4 py-3">Unban logs and audit review.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">channelCreate</td><td class="px-4 py-3">channel</td><td class="px-4 py-3">Guilds</td><td class="px-4 py-3">Permission and cache updates.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">channelUpdate</td><td class="px-4 py-3">oldChannel, newChannel</td><td class="px-4 py-3">Guilds</td><td class="px-4 py-3">Name, topic, permission changes.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">channelDelete</td><td class="px-4 py-3">channel</td><td class="px-4 py-3">Guilds</td><td class="px-4 py-3">Cleanup stale channel references.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">roleCreate</td><td class="px-4 py-3">role</td><td class="px-4 py-3">Guilds</td><td class="px-4 py-3">Role cache and permission tools.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">roleUpdate</td><td class="px-4 py-3">oldRole, newRole</td><td class="px-4 py-3">Guilds</td><td class="px-4 py-3">Permission drift checks.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">roleDelete</td><td class="px-4 py-3">role</td><td class="px-4 py-3">Guilds</td><td class="px-4 py-3">Remove stale role references.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">voiceStateUpdate</td><td class="px-4 py-3">oldState, newState</td><td class="px-4 py-3">GuildVoiceStates</td><td class="px-4 py-3">Voice joins, leaves, moves, mute state.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">threadCreate</td><td class="px-4 py-3">thread</td><td class="px-4 py-3">Guilds</td><td class="px-4 py-3">Thread setup and tracking.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">threadUpdate</td><td class="px-4 py-3">oldThread, newThread</td><td class="px-4 py-3">Guilds</td><td class="px-4 py-3">Thread archive/name changes.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">threadDelete</td><td class="px-4 py-3">thread</td><td class="px-4 py-3">Guilds</td><td class="px-4 py-3">Thread cleanup.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">error</td><td class="px-4 py-3">error</td><td class="px-4 py-3">none</td><td class="px-4 py-3">Runtime error logging.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">warn</td><td class="px-4 py-3">message</td><td class="px-4 py-3">none</td><td class="px-4 py-3">Operational warnings.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">debug</td><td class="px-4 py-3">message</td><td class="px-4 py-3">none</td><td class="px-4 py-3">Gateway/debug diagnostics.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">shardReady</td><td class="px-4 py-3">shardId</td><td class="px-4 py-3">sharding</td><td class="px-4 py-3">Shard availability.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">shardDisconnect</td><td class="px-4 py-3">event, shardId</td><td class="px-4 py-3">sharding</td><td class="px-4 py-3">Reconnect monitoring.</td></tr>
+              <tr><td class="px-4 py-3 font-mono">shardReconnecting</td><td class="px-4 py-3">shardId</td><td class="px-4 py-3">sharding</td><td class="px-4 py-3">Shard health dashboards.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Event Reference</h2>
+        <div class="mt-4 space-y-4">
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">ready</h3>
+            <p class="mt-2 text-slate-600">Fires once when the gateway session is ready and the bot user is available. Use `client.once` for startup logs and initialization.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters: none. Intents: none beyond normal gateway connection.</p>
+            <pre class="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-4 text-sm text-slate-100"><code>client.once("ready", () => {
+  log(`Online as ${client.user.tag}`)
+})</code></pre>
+          </article>
+
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">interactionCreate</h3>
+            <p class="mt-2 text-slate-600">Fires for slash commands, buttons, selects, modals, context menus, and autocomplete. Use interaction narrowing helpers before accessing specific fields.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters: `interaction`. Intents: usually `Guilds` for guild interactions.</p>
+            <pre class="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-4 text-sm text-slate-100"><code>client.on("interactionCreate", async (interaction) => {
+  if (interaction.isCommand("ping")) {
+    await interaction.reply({ content: "pong", ephemeral: true })
+  }
+})</code></pre>
+          </article>
+
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">messageCreate</h3>
+            <p class="mt-2 text-slate-600">Fires when a message is created in a channel the bot can see. Reading `message.content` normally requires the Message Content intent.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters: `message`. Intents: `GuildMessages`, often `MessageContent`.</p>
+          </article>
+
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">messageUpdate and messageDelete</h3>
+            <p class="mt-2 text-slate-600">Use these for logs, cache-aware message tracking, and message state changes. Partial messages may need fetching before all fields are available.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters: old/new message or deleted message. Intents: `GuildMessages`.</p>
+          </article>
+
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">guildCreate and guildDelete</h3>
+            <p class="mt-2 text-slate-600">Fires when the bot joins or leaves a guild. Good for setup, analytics, and clearing guild-specific cache.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters: `guild`. Intents: `Guilds`.</p>
+          </article>
+
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">guildMemberAdd and guildMemberRemove</h3>
+            <p class="mt-2 text-slate-600">Fires when members join or leave. Useful for welcome messages, audit trails, and syncing external state. Member events require privileged member intent in many bots.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters: `member`. Intents: `GuildMembers`.</p>
+          </article>
+
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">guildBanAdd and guildBanRemove</h3>
+            <p class="mt-2 text-slate-600">Fires when users are banned or unbanned. Pair with audit log helpers when you need moderator attribution.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters: `ban`. Intents: `GuildModeration` where available.</p>
+          </article>
+
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">channelCreate, channelUpdate, channelDelete</h3>
+            <p class="mt-2 text-slate-600">Fires when guild channels change. Use these to maintain channel caches and validate bot permissions after structure changes.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters: `channel`. Intents: `Guilds`.</p>
+          </article>
+
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">roleCreate, roleUpdate, roleDelete</h3>
+            <p class="mt-2 text-slate-600">Fires when roles change. Good for permission caches, role helper validation, and audit tools.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters: `role`. Intents: `Guilds`.</p>
+          </article>
+
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">voiceStateUpdate</h3>
+            <p class="mt-2 text-slate-600">Fires when a member joins, leaves, mutes, deafens, streams, or moves voice channels. Compare old and new voice state to understand the change.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters: `oldState`, `newState`. Intents: `GuildVoiceStates`.</p>
+          </article>
+
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">threadCreate, threadUpdate, threadDelete</h3>
+            <p class="mt-2 text-slate-600">Fires for thread lifecycle changes. Use for forum-style bots, support flows, and cache maintenance.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters: `thread`. Intents: `Guilds` and channel visibility permissions.</p>
+          </article>
+
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">error, warn, debug</h3>
+            <p class="mt-2 text-slate-600">Operational events from the client. Keep these handlers small and send details to your logger or observability tool.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters: error/message/debug info. Intents: none.</p>
+          </article>
+
+          <article class="rounded-lg border border-slate-200 p-5">
+            <h3 class="text-xl font-semibold">shardReady, shardDisconnect, shardReconnecting</h3>
+            <p class="mt-2 text-slate-600">Shard lifecycle events. Use them to track large bot availability and reconnect health.</p>
+            <p class="mt-2 text-sm text-slate-500">Parameters vary by event. Intents depend on your shard configuration.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+

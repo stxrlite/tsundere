@@ -1,0 +1,52 @@
+import {
+  Button,
+  Client,
+  Intents,
+  Row,
+  Slash,
+  componentCollector,
+  modalCollector
+} from "@tsundere/discord"
+
+const client = new Client({
+  token: env.DISCORD_TOKEN,
+  intents: [Intents.Guilds]
+})
+
+Slash.command("collect")
+  .description("Collect component interactions")
+  .register(client)
+
+client.on("ready", async () => {
+  const components = componentCollector(client, {
+    timeout: 30_000,
+    max: 5,
+    filter: (interaction) => interaction.customId?.startsWith("collect:") ?? false
+  })
+
+  for await (const interaction of components) {
+    await interaction.reply({
+      content: `Collected ${interaction.customId}`,
+      ephemeral: true
+    })
+  }
+
+  const modals = modalCollector(client, { timeout: 60_000 })
+  for await (const interaction of modals) {
+    log(`Modal submitted: ${interaction.customId}`)
+  }
+})
+
+client.on("interactionCreate", async (interaction) => {
+  if interaction.isCommand("collect") {
+    await interaction.reply({
+      content: "Collector running.",
+      components: [
+        Row.of(Button.primary("collect:one").label("Collect me"))
+      ],
+      ephemeral: true
+    })
+  }
+})
+
+client.login()

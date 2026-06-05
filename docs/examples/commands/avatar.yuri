@@ -1,0 +1,5 @@
+import { Slash } from "@tsundere/discord"
+
+export default Slash.command("avatar")
+  .description("Show a user's avatar")
+  .option("user", "target", "User to inspect")

@@ -1,0 +1,4 @@
+import { Slash } from "@tsundere/discord"
+
+export default Slash.command("ping")
+  .description("Check bot latency")

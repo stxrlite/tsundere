@@ -1,0 +1,48 @@
+import {
+  CacheManager,
+  Channels,
+  Guilds,
+  Members,
+  Messages,
+  Permissions,
+  Roles,
+  Users,
+  snowflake
+} from "@tsundere/discord"
+
+const cache = new CacheManager()
+
+const user = cache.users.set({
+  id: snowflake("100000000000000000"),
+  username: "yui",
+  tag: "yui#0001"
+})
+
+const guild = cache.guilds.set({
+  id: snowflake("200000000000000000"),
+  name: "Tsundere Lab"
+})
+
+const member = cache.members.set({
+  id: user.id,
+  user,
+  guildId: guild.id,
+  roles: [snowflake("300000000000000000")]
+})
+
+log(Users.mention(user))
+log(Members.mention(member))
+log(Guilds.label(guild))
+log(Roles.has(member, member.roles[0]))
+log(Channels.mention("400000000000000000"))
+log(Permissions.has(8n, 8n))
+
+const jump = Messages.jumpUrl({
+  id: "500000000000000000",
+  channelId: "400000000000000000",
+  guildId: guild.id,
+  author: user,
+  content: "hello"
+})
+
+log(jump)

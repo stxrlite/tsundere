@@ -1,0 +1,95 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Examples - Tsundere Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body class="bg-white text-slate-900">
+  <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <aside class="border-r border-slate-200 bg-slate-50 px-6 py-6 lg:sticky lg:top-0 lg:h-screen">
+      <div class="flex items-center gap-3">
+        <img src="../../assets/tsundere-logo.png" alt="Tsundere logo" class="h-12 w-12 rounded-lg object-cover">
+        <div><div class="text-lg font-semibold">Tsundere</div><div class="text-xs text-slate-500">Local Documentation</div></div>
+      </div>
+      <nav class="mt-8 space-y-1 text-sm">
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="index.html">Overview</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="getting-started.html">Getting Started</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="discord.html">Discord Guide</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="cli.html">CLI and Runtime</a>
+        <a class="block rounded-md px-3 py-2 text-slate-700 hover:bg-white" href="updates.html">Updates</a>
+      </nav>
+    </aside>
+    <main class="mx-auto w-full max-w-5xl px-6 py-10">
+      <h1 class="text-4xl font-bold tracking-tight">Examples</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600">The example `.yuri` files now live in `docs/examples`. They are documentation assets and runnable compiler samples.</p>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Example Folder</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>docs/examples/
+  starter-bot.yuri
+  embeds.yuri
+  components.yuri
+  collectors.yuri
+  modal-flow.yuri
+  slash-options.yuri
+  typed-router.yuri
+  commands/
+    ping.yuri
+    avatar.yuri
+    admin/
+      ban.yuri</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">Starter Bot</h2>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>import { Client, Intents, Slash, Embed } from "@tsundere/discord"
+
+const client = new Client({
+  token: env.DISCORD_TOKEN,
+  intents: [Intents.Guilds, Intents.GuildMessages]
+})
+
+client.once("ready", () => {
+  log(`Online as ${client.user.tag}`)
+})
+
+client.on("interactionCreate", async (interaction) => {
+  if interaction.isCommand("ping") {
+    await interaction.reply({
+      embeds: [
+        Embed.create()
+          .title("Pong")
+          .description(`Latency: ${client.ping}ms`)
+          .color("#ff7ab6")
+          .toJSON()
+      ],
+      ephemeral: true
+    })
+  }
+})
+
+Slash.command("ping")
+  .description("Check bot latency")
+  .register(client)
+
+client.login()</code></pre>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold">How to Use Examples</h2>
+        <div class="mt-4 space-y-4 text-slate-700">
+          <p>Read examples from `docs/examples` when learning a feature.</p>
+          <p>Copy a small pattern into your own `src` folder instead of importing directly from docs.</p>
+          <p>Run `tsundere build` in this repository to compile the examples configured in `tsundere.config.json`.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+
+

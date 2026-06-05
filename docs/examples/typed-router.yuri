@@ -1,0 +1,62 @@
+import {
+  Client,
+  Component,
+  Embed,
+  Intents,
+  InteractionRouter,
+  Row,
+  Schema,
+  Select
+} from "@tsundere/discord"
+
+const client = new Client({
+  token: env.DISCORD_TOKEN,
+  intents: [Intents.Guilds]
+})
+
+const BanData = Schema.define({
+  userId: "Snowflake"
+})
+
+const BanButton = Component.define<typeof BanData>("ban")
+
+const DepartmentSelect = Select.define("department", [
+  "Support",
+  "Moderation",
+  "Development"
+])
+
+const router = new InteractionRouter()
+
+router.button(BanButton, async (ctx) => {
+  await ctx.reply({
+    content: `Ban requested for ${ctx.data.userId}`,
+    ephemeral: true
+  })
+})
+
+router.select(DepartmentSelect, async (ctx) => {
+  await ctx.reply({
+    content: `Selected ${ctx.data}`,
+    ephemeral: true
+  })
+})
+
+router.command("panel", async (ctx) => {
+  await ctx.reply({
+    embeds: [
+      Embed.create()
+        .title("Panel")
+        .description("Typed components avoid custom ID parsing.")
+        .color("#ff7ab6")
+    ],
+    components: [
+      Row.of(BanButton.create({ userId: "100000000000000000" })),
+      Row.of(DepartmentSelect.create())
+    ],
+    ephemeral: true
+  })
+})
+
+router.bind(client)
+client.login()

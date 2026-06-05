@@ -8,5 +8,11 @@
   "storePath": "~/.tsundere/store",
   "linkMode": "auto",
   "strictDependencies": false,
-  "themeLogs": true
+  "themeLogs": true,
+  "diagnostics": {
+    "warnings": true,
+    "verbose": false,
+    "color": true,
+    "disabled": []
+  }
 }

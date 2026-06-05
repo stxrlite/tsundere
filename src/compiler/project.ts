@@ -21,6 +21,7 @@ export async function buildProject(config: TsundereConfig, cwd = process.cwd(), 
   const sourceRoot = resolve(cwd, config.source);
   const outRoot = resolve(cwd, config.outDir);
   const files = await walk(sourceRoot, ".yuri");
+  const diagnosticOptions = diagnosticFormatOptions(config);
   let errors = 0;
 
   for (const file of files) {
@@ -37,7 +38,10 @@ export async function buildProject(config: TsundereConfig, cwd = process.cwd(), 
     });
 
     for (const diagnostic of result.diagnostics) {
-      console.error(formatDiagnostic(diagnostic));
+      if (shouldSkipDiagnostic(diagnostic, config)) {
+        continue;
+      }
+      console.error(formatDiagnostic(diagnostic, diagnosticOptions));
       if (diagnostic.severity === "error") {
         errors += 1;
       }
@@ -118,8 +122,10 @@ export async function devProject(config: TsundereConfig, cwd = process.cwd()): P
       void rebuild();
     }, 100);
   });
+  const keepAlive = setInterval(() => undefined, 2147483647);
 
   const stop = (): void => {
+    clearInterval(keepAlive);
     watcher.close();
     if (child) {
       child.kill();
@@ -164,6 +170,7 @@ async function emitNodeRuntime(config: TsundereConfig, cwd: string, options: Bui
         fileName: file
       }).outputText
       : source;
+    output = addNodeImportExtensions(output);
     if (options.protect) {
       const result = protectJavaScript(output, options.protect);
       output = result.code;
@@ -182,6 +189,42 @@ async function emitNodeRuntime(config: TsundereConfig, cwd: string, options: Bui
     const ids = protectedBuilds.map((build) => build.buildId).join(", ");
     console.log(`Tsundere Protect ${options.protect.profile}: ${ids || "no runtime files"}`);
   }
+}
+
+function shouldSkipDiagnostic(diagnostic: { code: string; severity: "error" | "warning" }, config: TsundereConfig): boolean {
+  const disabled = new Set(config.diagnostics?.disabled ?? []);
+  if (disabled.has(diagnostic.code)) {
+    return true;
+  }
+  return diagnostic.severity === "warning" && config.diagnostics?.warnings === false;
+}
+
+function diagnosticFormatOptions(config: TsundereConfig): { color: boolean; verbose: boolean } {
+  const color = config.diagnostics?.color ?? (Boolean(process.stderr.isTTY) && !process.env.NO_COLOR);
+  return {
+    color,
+    verbose: config.diagnostics?.verbose ?? false
+  };
+}
+
+function addNodeImportExtensions(source: string): string {
+  return source
+    .replace(/(\bfrom\s*["'])(\.{1,2}\/[^"']+)(["'])/gu, (_match, prefix: string, specifier: string, suffix: string) => `${prefix}${withJsExtension(specifier)}${suffix}`)
+    .replace(/(\bimport\s*["'])(\.{1,2}\/[^"']+)(["'])/gu, (_match, prefix: string, specifier: string, suffix: string) => `${prefix}${withJsExtension(specifier)}${suffix}`)
+    .replace(/(\bimport\s*\(\s*["'])(\.{1,2}\/[^"']+)(["']\s*\))/gu, (_match, prefix: string, specifier: string, suffix: string) => `${prefix}${withJsExtension(specifier)}${suffix}`);
+}
+
+function withJsExtension(specifier: string): string {
+  const hashIndex = specifier.indexOf("#");
+  const beforeHash = hashIndex >= 0 ? specifier.slice(0, hashIndex) : specifier;
+  const hash = hashIndex >= 0 ? specifier.slice(hashIndex) : "";
+  const queryIndex = beforeHash.indexOf("?");
+  const pathOnly = queryIndex >= 0 ? beforeHash.slice(0, queryIndex) : beforeHash;
+  const query = queryIndex >= 0 ? beforeHash.slice(queryIndex) : "";
+  if (/\.(?:cjs|mjs|js|json|node)$/iu.test(pathOnly)) {
+    return specifier;
+  }
+  return `${pathOnly}.js${query}${hash}`;
 }
 
 function runtimeEntry(config: TsundereConfig, cwd: string): string {

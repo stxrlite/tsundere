@@ -25,6 +25,14 @@ export interface TsundereConfig {
     defaultIntents?: string[];
   };
   commands?: CommandDiscoveryConfig;
+  diagnostics?: DiagnosticConfig;
+}
+
+export interface DiagnosticConfig {
+  warnings?: boolean;
+  verbose?: boolean;
+  color?: boolean;
+  disabled?: string[];
 }
 
 export interface CommandDiscoveryConfig {

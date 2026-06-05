@@ -11,7 +11,11 @@ const defaults: TsundereConfig = {
   strict: true,
   sourceMaps: true,
   runtime: "node",
-  plugins: []
+  plugins: [],
+  diagnostics: {
+    warnings: true,
+    verbose: false
+  }
 };
 
 export async function loadConfig(cwd = process.cwd(), environment = process.env.TSUNDERE_ENV): Promise<TsundereConfig> {
@@ -67,6 +71,9 @@ function mergeConfig(base: TsundereConfig, override: Partial<TsundereConfig>): T
   }
   if (base.enterprise || override.enterprise) {
     merged.enterprise = { ...base.enterprise, ...override.enterprise };
+  }
+  if (base.diagnostics || override.diagnostics) {
+    merged.diagnostics = { ...base.diagnostics, ...override.diagnostics };
   }
   const plugins = override.plugins ?? base.plugins;
   if (plugins !== undefined) {

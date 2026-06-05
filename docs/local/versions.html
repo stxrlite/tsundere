@@ -25,7 +25,7 @@
     </aside>
     <main class="mx-auto w-full max-w-5xl px-6 py-10">
       <h1 class="text-4xl font-bold tracking-tight">Versions and Updates</h1>
-      <p class="mt-4 text-lg leading-8 text-slate-600">Tsundere now has a version-aware CLI foundation. It can report the installed version and check GitHub releases for newer builds.</p>
+      <p class="mt-4 text-lg leading-8 text-slate-600">Tsundere can report the installed version, check GitHub releases, and automatically install the newest CLI release when you approve it.</p>
 
       <section class="mt-10">
         <h2 class="text-2xl font-semibold">Check Your Version</h2>
@@ -36,8 +36,9 @@
         <h2 class="text-2xl font-semibold">Check for Updates</h2>
         <pre class="mt-4 overflow-x-auto rounded-lg bg-slate-950 p-5 text-sm text-slate-100"><code>tsundere updater
 tsundere updater check
-tsundere updater self</code></pre>
-        <p class="mt-4 text-slate-600">The current updater checks the configured GitHub repository and prints the latest release. Automatic download and install is planned for a later release.</p>
+tsundere updater self --yes
+tsundere updater self --dry-run</code></pre>
+        <p class="mt-4 text-slate-600">`tsundere updater self --yes` downloads the newest CLI tarball from the configured GitHub release and installs it globally with npm. `--dry-run` verifies the chosen release asset without changing the machine.</p>
       </section>
 
       <section class="mt-10">

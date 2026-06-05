@@ -11,6 +11,7 @@ import { cleanDiscordTypes, doctorDiscordTypes, inspectDiscordType, syncDiscordT
 import { writeCommandManifest } from "./commands/discovery.js";
 import { cleanStore, optimizedNpmInstall, optimizerDoctor, pruneStore, readStorePath } from "./package-optimizer.js";
 import { commandExists, currentPlatform, ensureExecutable, ensureTsunderePaths, openFileCommand, platformExecutable, platformLabel, runCommand, runtimeChecks, tsunderePaths } from "./platform/index.js";
+import { compareVersions, latestRelease, selfUpdate } from "./updater.js";
 
 const [, , command = "help", ...args] = process.argv;
 const cliRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -122,29 +123,47 @@ async function runtime(args: string[]): Promise<number> {
 async function updater(args: string[]): Promise<number> {
   const action = args[0] ?? "check";
   if (!["check", "self", "info"].includes(action)) {
-    throw new Error("Usage: tsundere updater [check|self|info]");
+    throw new Error("Usage: tsundere updater [check|self|info] [--yes] [--force] [--dry-run]");
   }
   const current = packageVersion();
   const repo = updateRepo();
   console.log(`Tsundere ${current}`);
   console.log(`Checking GitHub releases: ${repo}`);
-  const latest = await latestRelease(repo);
+  const latest = await latestRelease(repo, current);
   if (!latest) {
     console.log("Could not read the latest release. Check your network connection or TSUNDERE_UPDATE_REPO.");
     return 1;
   }
 
   console.log(`Latest release: ${latest.version}`);
-  if (compareVersions(latest.version, current) <= 0) {
+  if (action !== "self" && compareVersions(latest.version, current) <= 0) {
     console.log("You are already on the latest known version.");
     return 0;
   }
 
-  console.log(`Update available: ${current} -> ${latest.version}`);
+  if (compareVersions(latest.version, current) <= 0) {
+    console.log("You are already on the latest known version.");
+  } else {
+    console.log(`Update available: ${current} -> ${latest.version}`);
+  }
   console.log(`Release page: ${latest.url}`);
-  console.log("Current updater flow: download the release zip, unzip it, then run install-tsundere.ps1.");
-  console.log("Future updater flow will download and install the release automatically after confirmation.");
-  return 0;
+  if (action === "check" || action === "info") {
+    console.log("Run tsundere updater self --yes to install it automatically.");
+    return 0;
+  }
+
+  const result = await selfUpdate({
+    currentVersion: current,
+    repo,
+    yes: args.includes("--yes") || args.includes("-y"),
+    force: args.includes("--force"),
+    dryRun: args.includes("--dry-run")
+  });
+  console.log(result.message);
+  if (result.asset) {
+    console.log(`Asset: ${result.asset.name}`);
+  }
+  return result.code;
 }
 
 async function version(): Promise<number> {
@@ -527,7 +546,7 @@ Usage:
   tsundere store prune
   tsundere cache clean
   tsundere update [package]
-  tsundere updater [check|self|info]
+  tsundere updater [check|self|info] [--yes] [--force] [--dry-run]
   tsundere version
   tsundere doctor
   tsundere format
@@ -578,44 +597,6 @@ function updateRepo(): string {
   }
   const manifest = JSON.parse(readFileSyncText(packagePath)) as { tsundere?: { githubRepo?: string } };
   return manifest.tsundere?.githubRepo ?? DEFAULT_GITHUB_REPO;
-}
-
-async function latestRelease(repo: string): Promise<{ version: string; url: string } | undefined> {
-  try {
-    const response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
-      headers: {
-        "Accept": "application/vnd.github+json",
-        "User-Agent": `tsundere-cli/${packageVersion()}`
-      }
-    });
-    if (!response.ok) {
-      return undefined;
-    }
-    const json = await response.json() as { tag_name?: string; html_url?: string };
-    const version = normalizeVersion(json.tag_name ?? "");
-    if (!version) {
-      return undefined;
-    }
-    return { version, url: json.html_url ?? `https://github.com/${repo}/releases/latest` };
-  } catch {
-    return undefined;
-  }
-}
-
-function normalizeVersion(value: string): string {
-  return value.trim().replace(/^v/iu, "");
-}
-
-function compareVersions(a: string, b: string): number {
-  const left = normalizeVersion(a).split(".").map((part) => Number.parseInt(part, 10) || 0);
-  const right = normalizeVersion(b).split(".").map((part) => Number.parseInt(part, 10) || 0);
-  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
-    const delta = (left[index] ?? 0) - (right[index] ?? 0);
-    if (delta !== 0) {
-      return delta;
-    }
-  }
-  return 0;
 }
 
 function prettyError(error: unknown): string {

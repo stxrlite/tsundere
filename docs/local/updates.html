@@ -38,6 +38,7 @@
           <li>Moved the GitHub snake workflow to `TsundereLang/.github`.</li>
           <li>Added Windows and Linux web installers to the release bundle.</li>
           <li>Updated release publishing so it prompts for version and updates existing releases.</li>
+          <li>Added automatic `tsundere updater self --yes` CLI updates from GitHub release tarballs.</li>
           <li>Added newer Discord component layout builders.</li>
           <li>Expanded the GitBot prototype with moderation commands, warning storage, welcome config, autorole, and GitHub role sync.</li>
         </ul>
@@ -58,10 +59,10 @@ tsundere start</code></pre>
       </section>
 
       <section class="mt-10">
-        <h2 class="text-2xl font-semibold">Planned Update Flow</h2>
+        <h2 class="text-2xl font-semibold">Automatic Update Flow</h2>
         <div class="mt-4 space-y-4 text-slate-700">
-          <p>Future versions should let `tsundere updater self` download the newest GitHub release, verify the package, install the CLI, refresh the VS Code extension, and reopen the local docs.</p>
-          <p>The current release checker is intentionally conservative. It tells you what version is available and where to download it without replacing files automatically.</p>
+          <p>`tsundere updater self --yes` downloads the newest `tsundere-cli` tarball from GitHub releases and installs it globally with npm.</p>
+          <p>`tsundere updater self --dry-run` checks the selected release and asset without replacing the installed CLI.</p>
         </div>
       </section>
     </main>

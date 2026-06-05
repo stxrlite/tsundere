@@ -3,8 +3,13 @@ $ErrorActionPreference = "Stop"
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $Release = Join-Path $Root "release"
 
+if (Get-Command tsundere -ErrorAction SilentlyContinue) {
+  tsundere updater self --yes
+  exit $LASTEXITCODE
+}
+
 if (-not (Test-Path $Release)) {
-  throw "Release folder not found. Run npm run dist:release first."
+  throw "Tsundere is not installed and release folder was not found. Install from GitHub or run npm run dist:release first."
 }
 
 Push-Location $Release

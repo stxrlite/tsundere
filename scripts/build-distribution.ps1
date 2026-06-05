@@ -168,6 +168,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -NoExit -File "%~dp0install-ts
 
   Copy-Required (Join-Path $root "scripts/install-tsundere-windows.ps1") (Join-Path $release "install-tsundere-windows.ps1")
   Copy-Required (Join-Path $root "scripts/install-tsundere-linux.sh") (Join-Path $release "install-tsundere-linux.sh")
+  Copy-Required (Join-Path $root "updater/update-tsundere.ps1") (Join-Path $release "update-tsundere.ps1")
 
   $cliTgz = Get-ChildItem $release -Filter "tsundere-cli-*.tgz" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
   if (-not $cliTgz) {
@@ -189,6 +190,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -NoExit -File "%~dp0install-ts
 
   Copy-Required (Join-Path $release "install-tsundere.ps1") (Join-Path $bundleDir "install-tsundere.ps1")
   Copy-Required (Join-Path $release "installer.bat") (Join-Path $bundleDir "installer.bat")
+  Copy-Required (Join-Path $release "update-tsundere.ps1") (Join-Path $bundleDir "update-tsundere.ps1")
   Copy-Required (Join-Path $release "install-tsundere-windows.ps1") (Join-Path $bundleDir "install-tsundere-windows.ps1")
   Copy-Required (Join-Path $release "install-tsundere-linux.sh") (Join-Path $bundleDir "install-tsundere-linux.sh")
   Copy-Required (Join-Path $release "tsundere-cli.tgz") (Join-Path $bundleDir "packages/tsundere-cli.tgz")
@@ -218,6 +220,12 @@ Linux web installer:
 sh ./install-tsundere-linux.sh
 ```
 
+Automatic CLI updater:
+
+```powershell
+.\update-tsundere.ps1
+```
+
 ## Layout
 
 - `packages/tsundere-cli.tgz`: CLI package alias for the installer.
@@ -225,6 +233,7 @@ sh ./install-tsundere-linux.sh
 - `packages/tsundere-cli-$Version.tgz`: versioned CLI package.
 - `packages/tsundere-discord-$Version.tgz`: versioned Discord runtime package.
 - `editor/$($vsix.Name)`: VS Code and Cursor extension.
+- `update-tsundere.ps1`: automatic CLI updater wrapper.
 - `checksums/SHA256SUMS.txt`: SHA256 checksums for release files.
 
 For an existing bot project after installing this release:

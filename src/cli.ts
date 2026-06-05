@@ -28,9 +28,9 @@ async function run(command: string, args: string[]): Promise<number> {
     case "create":
       return createProject(args);
     case "add":
-      return pnpm(["add", ...args]);
+      return addPackages(args);
     case "remove":
-      return pnpm(["remove", ...args]);
+      return removePackages(args);
     case "install":
       return installPackages(args);
     case "store":
@@ -38,7 +38,7 @@ async function run(command: string, args: string[]): Promise<number> {
     case "cache":
       return cache(args);
     case "update":
-      return pnpm(["update", ...args]);
+      return updatePackages(args);
     case "updater":
       return updater(args);
     case "version":
@@ -84,6 +84,26 @@ async function installPackages(args: string[]): Promise<number> {
   const config = await loadConfig();
   const npmArgs = args.length > 0 ? ["install", ...mapBundledPackages(args)] : ["install"];
   return optimizedNpmInstall(npmArgs, { config });
+}
+
+async function addPackages(args: string[]): Promise<number> {
+  if (args.length === 0) {
+    throw new Error("Usage: tsundere add <package>");
+  }
+  return installPackages(args);
+}
+
+async function removePackages(args: string[]): Promise<number> {
+  if (args.length === 0) {
+    throw new Error("Usage: tsundere remove <package>");
+  }
+  const config = await loadConfig();
+  return optimizedNpmInstall(["uninstall", ...args], { config });
+}
+
+async function updatePackages(args: string[]): Promise<number> {
+  const config = await loadConfig();
+  return optimizedNpmInstall(["update", ...args], { config });
 }
 
 async function runtime(args: string[]): Promise<number> {

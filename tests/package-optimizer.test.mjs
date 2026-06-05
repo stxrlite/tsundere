@@ -11,7 +11,8 @@ import {
   hydrateCachedPackages,
   optimizedNpmInstall,
   pruneStore,
-  resolveInstallConfig
+  resolveInstallConfig,
+  syncTsunderePackageFiles
 } from "../dist/package-optimizer.js";
 
 test("fresh install runs npm and stores packages", async () => {
@@ -27,6 +28,30 @@ test("fresh install runs npm and stores packages", async () => {
   });
   assert.equal(code, 0);
   assert.equal(existsSync(join(fixture.store, "packages", "left-pad")), true);
+  await fixture.cleanup();
+});
+
+test("install writes Tsundere YAML workspace and lock files", async () => {
+  const fixture = await createProject();
+  const config = resolveInstallConfig({ storePath: fixture.store, linkMode: "copy", themeLogs: false }, fixture.project);
+  const code = await optimizedNpmInstall(["install"], {
+    cwd: fixture.project,
+    config,
+    npmRunner: async () => {
+      await writePackage(join(fixture.project, "node_modules", "left-pad"), "left-pad", "1.0.0", "fresh");
+      return 0;
+    }
+  });
+  assert.equal(code, 0);
+  const workspace = await readFile(join(fixture.project, "tsundere-workspace.yaml"), "utf8");
+  const lock = await readFile(join(fixture.project, "tsundere-lock.yaml"), "utf8");
+  assert.match(workspace, /packages:\n  - "."/u);
+  assert.match(workspace, /packageManager: "npm"/u);
+  assert.match(lock, /lockfileVersion: 1/u);
+  assert.match(lock, /npmLockfileVersion: 3/u);
+  assert.match(lock, /"\/left-pad\/1.0.0":/u);
+  assert.match(lock, /integrity: "sha512-test"/u);
+  assert.match(lock, /storeKey: "left-pad\/1.0.0\//u);
   await fixture.cleanup();
 });
 
@@ -134,6 +159,19 @@ test("cli install accepts BOM-prefixed package and config JSON", async () => {
   await rm(root, { recursive: true, force: true });
 });
 
+test("workspace packages are mirrored into Tsundere YAML", async () => {
+  const fixture = await createWorkspaceProject();
+  const config = resolveInstallConfig({ storePath: fixture.store, linkMode: "copy", themeLogs: false }, fixture.project);
+  await syncTsunderePackageFiles(fixture.project, config);
+  const workspace = await readFile(join(fixture.project, "tsundere-workspace.yaml"), "utf8");
+  const lock = await readFile(join(fixture.project, "tsundere-lock.yaml"), "utf8");
+  assert.match(workspace, /- "packages\/\*"/u);
+  assert.match(lock, /workspace:\n  packages:\n    - "."\n    - "packages\/\*"/u);
+  assert.match(lock, /importers:\n  \.:/u);
+  assert.match(lock, /"packages\/bot":/u);
+  await fixture.cleanup();
+});
+
 async function createProject() {
   const root = await mkdtemp(join(tmpdir(), "tsundere-optimizer-"));
   const project = join(root, "project");
@@ -177,6 +215,54 @@ async function createProject() {
         direct: true
       }];
     },
+    cleanup() {
+      return rm(root, { recursive: true, force: true });
+    }
+  };
+}
+
+async function createWorkspaceProject() {
+  const root = await mkdtemp(join(tmpdir(), "tsundere-workspace-"));
+  const project = join(root, "project");
+  const store = join(root, "store");
+  await mkdir(join(project, "packages", "bot"), { recursive: true });
+  await writeFile(join(project, "package.json"), `${JSON.stringify({
+    name: "workspace-fixture",
+    version: "1.0.0",
+    packageManager: "npm@10.0.0",
+    workspaces: ["packages/*"],
+    dependencies: {
+      "left-pad": "1.0.0"
+    }
+  }, null, 2)}\n`, "utf8");
+  await writeFile(join(project, "package-lock.json"), `${JSON.stringify({
+    name: "workspace-fixture",
+    lockfileVersion: 3,
+    packages: {
+      "": {
+        name: "workspace-fixture",
+        version: "1.0.0",
+        dependencies: {
+          "left-pad": "1.0.0"
+        }
+      },
+      "packages/bot": {
+        name: "bot",
+        version: "1.0.0",
+        dependencies: {
+          "left-pad": "1.0.0"
+        }
+      },
+      "node_modules/left-pad": {
+        version: "1.0.0",
+        resolved: "https://registry.npmjs.org/left-pad/-/left-pad-1.0.0.tgz",
+        integrity: "sha512-test"
+      }
+    }
+  }, null, 2)}\n`, "utf8");
+  return {
+    project,
+    store,
     cleanup() {
       return rm(root, { recursive: true, force: true });
     }

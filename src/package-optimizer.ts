@@ -37,6 +37,7 @@ export interface StorePruneResult {
 }
 
 interface NpmLockfile {
+  lockfileVersion?: number;
   packages?: Record<string, NpmLockPackage>;
 }
 
@@ -47,6 +48,8 @@ interface NpmLockPackage {
   integrity?: string;
   link?: boolean;
   dependencies?: Record<string, string>;
+  dev?: boolean;
+  optional?: boolean;
 }
 
 interface PackageEntry {
@@ -97,6 +100,23 @@ interface OptimizedInstallOptions {
   npmRunner?: (args: string[], cwd: string) => Promise<number>;
 }
 
+interface PackageManifest {
+  name?: string;
+  version?: string;
+  packageManager?: string;
+  workspaces?: string[] | { packages?: string[] };
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+}
+
+interface WorkspaceSnapshot {
+  packages: string[];
+  packageManager: string;
+  lockfile: string;
+}
+
 export function resolveInstallConfig(config: Partial<TsundereConfig> = {}, cwd = process.cwd()): TsundereInstallConfig {
   return {
     storePath: resolveStorePath(config.storePath, cwd),
@@ -119,6 +139,7 @@ export async function optimizedNpmInstall(npmArgs: string[], options: OptimizedI
   const harvest = npmCode === 0 ? await harvestProjectPackages(afterEntries, installConfig) : { stored: 0, hits: 0, corrupt: 0, keys: [] };
   if (npmCode === 0) {
     await writeProjectRefs(installConfig.storePath, cwd, harvest.keys);
+    await syncTsunderePackageFiles(cwd, installConfig, afterEntries);
   }
   const strictWarnings = npmCode === 0 && installConfig.strictDependencies
     ? await strictDependencyWarnings(cwd, afterEntries)
@@ -196,10 +217,26 @@ export async function optimizerDoctor(config: Partial<TsundereConfig> = {}, cwd 
       `  tsundere store: ${installConfig.storePath}`,
       `  link mode: ${installConfig.linkMode}`,
       `  strict dependencies: ${installConfig.strictDependencies ? "report" : "off"}`,
+      `  workspace yaml: ${existsSync(resolve(cwd, "tsundere-workspace.yaml")) ? "present" : "missing"}`,
+      `  lock yaml: ${existsSync(resolve(cwd, "tsundere-lock.yaml")) ? "present" : "missing"}`,
       `  cached packages: ${entries.length}`,
       `  invalid store entries: ${invalid}`
     ]
   };
+}
+
+export async function syncTsunderePackageFiles(cwd: string, config: TsundereInstallConfig, entries?: PackageEntry[]): Promise<void> {
+  const lockPath = resolve(cwd, "package-lock.json");
+  const manifestPath = resolve(cwd, "package.json");
+  if (!existsSync(lockPath) || !existsSync(manifestPath)) {
+    return;
+  }
+  const manifest = JSON.parse(stripBom(await readFile(manifestPath, "utf8"))) as PackageManifest;
+  const lock = JSON.parse(stripBom(await readFile(lockPath, "utf8"))) as NpmLockfile;
+  const packageEntries = entries ?? await readPackageEntries(cwd);
+  const workspace = workspaceSnapshot(manifest);
+  await writeFile(resolve(cwd, "tsundere-workspace.yaml"), yamlStringify(workspaceYaml(workspace)), "utf8");
+  await writeFile(resolve(cwd, "tsundere-lock.yaml"), yamlStringify(lockYaml(cwd, manifest, lock, config, packageEntries, workspace)), "utf8");
 }
 
 export async function hydrateCachedPackages(entries: PackageEntry[], config: TsundereInstallConfig): Promise<HydrateResult> {
@@ -287,6 +324,181 @@ async function readPackageEntries(cwd: string): Promise<PackageEntry[]> {
     });
   }
   return entries;
+}
+
+function workspaceSnapshot(manifest: PackageManifest): WorkspaceSnapshot {
+  const packageManager = manifest.packageManager?.split("@")[0] ?? "npm";
+  return {
+    packages: workspacePackages(manifest),
+    packageManager,
+    lockfile: "tsundere-lock.yaml"
+  };
+}
+
+function workspacePackages(manifest: PackageManifest): string[] {
+  if (Array.isArray(manifest.workspaces) && manifest.workspaces.length > 0) {
+    return [".", ...manifest.workspaces.filter((item) => item !== ".")];
+  }
+  if (manifest.workspaces && !Array.isArray(manifest.workspaces) && Array.isArray(manifest.workspaces.packages) && manifest.workspaces.packages.length > 0) {
+    return [".", ...manifest.workspaces.packages.filter((item) => item !== ".")];
+  }
+  return ["."];
+}
+
+function workspaceYaml(workspace: WorkspaceSnapshot): Record<string, unknown> {
+  return {
+    packages: workspace.packages,
+    packageManager: workspace.packageManager,
+    lockfile: workspace.lockfile
+  };
+}
+
+function lockYaml(
+  cwd: string,
+  manifest: PackageManifest,
+  lock: NpmLockfile,
+  config: TsundereInstallConfig,
+  entries: PackageEntry[],
+  workspace: WorkspaceSnapshot
+): Record<string, unknown> {
+  const entryByLockPath = new Map(entries.map((entry) => [entry.lockPath, entry]));
+  const importers: Record<string, unknown> = {};
+  const packages: Record<string, unknown> = {};
+  for (const [lockPath, packageInfo] of Object.entries(lock.packages ?? {})) {
+    if (lockPath === "") {
+      importers["."] = importerYaml(manifest, packageInfo);
+      continue;
+    }
+    if (!lockPath.startsWith("node_modules/") || packageInfo.link || !packageInfo.version) {
+      const importerPath = normalizeWorkspaceImporter(lockPath);
+      if (importerPath) {
+        importers[importerPath] = importerYaml(undefined, packageInfo);
+      }
+      continue;
+    }
+    const name = packageNameFromLockPath(lockPath);
+    if (!name) {
+      continue;
+    }
+    const entry = entryByLockPath.get(lockPath);
+    const packageKey = `/${name}/${packageInfo.version}`;
+    packages[packageKey] = compactObject({
+      name,
+      version: packageInfo.version,
+      resolution: compactObject({
+        integrity: packageInfo.integrity,
+        tarball: packageInfo.resolved
+      }),
+      dependencies: packageInfo.dependencies,
+      dev: packageInfo.dev || undefined,
+      optional: packageInfo.optional || undefined,
+      storeKey: entry ? storeEntryFor(config.storePath, entry).key : undefined
+    });
+  }
+  return {
+    lockfileVersion: 1,
+    npmLockfileVersion: lock.lockfileVersion ?? 0,
+    generatedBy: "tsundere",
+    packageManager: workspace.packageManager,
+    workspace: {
+      packages: workspace.packages
+    },
+    importers,
+    packages
+  };
+}
+
+function importerYaml(manifest: PackageManifest | undefined, lockPackage: NpmLockPackage): Record<string, unknown> {
+  return compactObject({
+    name: manifest?.name ?? lockPackage.name,
+    version: manifest?.version ?? lockPackage.version,
+    dependencies: manifest?.dependencies ?? lockPackage.dependencies,
+    devDependencies: manifest?.devDependencies,
+    optionalDependencies: manifest?.optionalDependencies,
+    peerDependencies: manifest?.peerDependencies
+  });
+}
+
+function normalizeWorkspaceImporter(lockPath: string): string | undefined {
+  if (!lockPath || lockPath.startsWith("node_modules/")) {
+    return undefined;
+  }
+  return lockPath.replace(/\\/gu, "/");
+}
+
+function compactObject<T extends Record<string, unknown>>(value: T): Record<string, unknown> {
+  const compacted: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (child === undefined) {
+      continue;
+    }
+    if (isPlainObject(child) && Object.keys(child).length === 0) {
+      continue;
+    }
+    compacted[key] = child;
+  }
+  return compacted;
+}
+
+function yamlStringify(value: unknown): string {
+  return `${yamlValue(value, 0)}\n`;
+}
+
+function yamlValue(value: unknown, indent: number): string {
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return "[]";
+    }
+    return value.map((item) => `${spaces(indent)}- ${yamlInlineOrBlock(item, indent + 2)}`).join("\n");
+  }
+  if (isPlainObject(value)) {
+    const entries = Object.entries(value);
+    if (entries.length === 0) {
+      return "{}";
+    }
+    return entries.map(([key, child]) => {
+      if (Array.isArray(child) && child.length === 0) {
+        return `${spaces(indent)}${yamlKey(key)}: []`;
+      }
+      if (isPlainObject(child) && Object.keys(child).length === 0) {
+        return `${spaces(indent)}${yamlKey(key)}: {}`;
+      }
+      if (Array.isArray(child) || isPlainObject(child)) {
+        return `${spaces(indent)}${yamlKey(key)}:\n${yamlValue(child, indent + 2)}`;
+      }
+      return `${spaces(indent)}${yamlKey(key)}: ${yamlScalar(child)}`;
+    }).join("\n");
+  }
+  return yamlScalar(value);
+}
+
+function yamlInlineOrBlock(value: unknown, indent: number): string {
+  if (Array.isArray(value) || isPlainObject(value)) {
+    return `\n${yamlValue(value, indent)}`;
+  }
+  return yamlScalar(value);
+}
+
+function yamlKey(value: string): string {
+  return /^[A-Za-z0-9_.-]+$/u.test(value) ? value : JSON.stringify(value);
+}
+
+function yamlScalar(value: unknown): string {
+  if (value === null) {
+    return "null";
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return JSON.stringify(String(value));
+}
+
+function spaces(count: number): string {
+  return " ".repeat(count);
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function packageNameFromLockPath(packagePath: string): string | undefined {

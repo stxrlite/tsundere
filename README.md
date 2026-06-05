@@ -133,6 +133,24 @@ tsundere update discord.js
 
 `tsundere install` wraps normal `npm install` and keeps `package.json`, `package-lock.json`, npm scripts, and Node resolution compatible. Around npm, Tsundere adds a small optimization layer that reuses validated package directories from a global store before npm runs, then stores fresh packages after a successful install.
 
+You can install npm packages through Tsundere:
+
+```powershell
+tsundere install discord.js
+tsundere add zod
+tsundere remove zod
+tsundere update discord.js
+```
+
+Tsundere still lets npm own dependency resolution and `package-lock.json`. After a successful install, add, remove, or update, Tsundere also writes:
+
+```text
+tsundere-workspace.yaml
+tsundere-lock.yaml
+```
+
+`tsundere-workspace.yaml` mirrors npm workspace patterns from `package.json` and defaults to the current project when no workspaces are configured. `tsundere-lock.yaml` is Tsundere's YAML snapshot of npm's lockfile, including package versions, tarball URLs, integrity strings, direct workspace importers, and portable Tsundere store keys. It is similar in spirit to pnpm's YAML workspace and lock files, but it is generated from npm metadata and does not replace `package-lock.json`.
+
 Default store:
 
 ```powershell

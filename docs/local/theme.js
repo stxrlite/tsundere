@@ -184,7 +184,7 @@ const docsIndex = [
   {
     href: "versions.html",
     title: "Versions",
-    text: "Versions and updates explain tsundere version, tsundere updater, tsundere updater check, tsundere updater self, GitHub releases, TSUNDERE_UPDATE_REPO, package metadata, project package updates, tsundere update discord.js, and tsundere update mysql2."
+    text: "Versions and updates explain tsundere version, tsundere updater, tsundere updater check, tsundere updater self --yes, tsundere updater self --dry-run, automatic CLI updates from GitHub releases, TSUNDERE_UPDATE_REPO, package metadata, project package updates, tsundere update discord.js, and tsundere update mysql2."
   },
   {
     href: "roadmap.html",

@@ -155,6 +155,7 @@ tsundere start
 tsundere docs
 tsundere version
 tsundere updater
+tsundere updater self --yes
 tsundere update discord.js
 tsundere store path
 tsundere store prune
@@ -165,7 +166,7 @@ tsundere types sync
 tsundere fingerprint inspect
 ```
 
-`tsundere updater` checks the configured GitHub release feed for newer Tsundere versions.
+`tsundere updater` checks the configured GitHub release feed for newer Tsundere versions. `tsundere updater self --yes` downloads the latest CLI tarball from GitHub releases and installs it globally with npm. Use `tsundere updater self --dry-run` to verify what would be installed without changing the machine.
 
 `tsundere update <package>` updates project packages:
 

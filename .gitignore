@@ -5,6 +5,7 @@ build/
 .yuri-cache/
 .npm-cache/
 release/
+installer/electron/out/
 tsundere-plugins/
 tsundere-gitbot/
 tsundere-dotgithub/

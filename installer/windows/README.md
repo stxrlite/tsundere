@@ -1,6 +1,8 @@
 # Tsundere Windows Installer
 
-This folder contains the custom Windows installer shell for Tsundere.
+This folder contains the PowerShell fallback installer and uninstaller for Tsundere.
+
+The preferred public installer is the Electron-based `.exe` in `installer/electron`.
 
 Run:
 
@@ -20,11 +22,10 @@ The installer provides:
 - Apps & Features uninstaller registration
 - Guided onboarding links
 
-Release packaging should bundle this folder with:
+Release packaging should bundle the Electron installer with:
 
 - `tsundere-cli.tgz`
 - `tsundere-discord.tgz`
 - `vscode-tsundere-*.vsix`
 - `assets/tsundere-logo.png`
 - `docs/local`
-

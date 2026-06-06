@@ -82,6 +82,9 @@ export interface Message {
   guildId?: Snowflake;
   author: User;
   content: string;
+  member?: Member;
+  channel?: Channel;
+  reply?(response: string | InteractionResponse): Promise<void>;
 }
 
 export interface VoiceState {
@@ -112,9 +115,16 @@ export interface Webhook {
 export interface DiscordEvents {
   ready: [];
   messageCreate: [message: Message];
+  messageDelete: [message: Message];
+  messageUpdate: [oldMessage: Message, newMessage: Message];
   interactionCreate: [interaction: Interaction];
   guildCreate: [guild: Guild];
+  guildDelete: [guild: Guild];
   guildMemberAdd: [member: Member];
+  guildMemberRemove: [member: Member];
+  channelCreate: [channel: Channel];
+  channelDelete: [channel: Channel];
+  channelUpdate: [oldChannel: Channel, newChannel: Channel];
   voiceStateUpdate: [oldState: VoiceState, newState: VoiceState];
   error: [error: Error];
 }
@@ -135,9 +145,11 @@ export interface Interaction {
   channelId?: Snowflake;
   user?: User;
   member?: Member;
+  guild?: Guild;
+  channel?: Channel;
   commandName?: string;
   customId?: string;
-  options?: InteractionOption[];
+  options?: InteractionOptions;
   isCommand(name?: string): boolean;
   isButton(customId?: string): boolean;
   isModal(customId?: string): boolean;
@@ -149,6 +161,16 @@ export interface Interaction {
   editReply(response: InteractionResponse): Promise<void>;
   followUp(response: InteractionResponse): Promise<void>;
   deleteReply(): Promise<void>;
+}
+
+export interface InteractionOptions extends Array<InteractionOption> {
+  user(name: string): User | undefined;
+  string(name: string): string | undefined;
+  number(name: string): number | undefined;
+  integer(name: string): number | undefined;
+  boolean(name: string): boolean | undefined;
+  channel(name: string): Channel | undefined;
+  role(name: string): unknown;
 }
 
 export interface ReplyOptions {

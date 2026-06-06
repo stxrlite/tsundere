@@ -11,7 +11,7 @@ import { cleanDiscordTypes, doctorDiscordTypes, inspectDiscordType, syncDiscordT
 import { writeCommandManifest } from "./commands/discovery.js";
 import { cleanStore, optimizedNpmInstall, optimizerDoctor, pruneStore, readStorePath } from "./package-optimizer.js";
 import { commandExists, currentPlatform, ensureExecutable, ensureTsunderePaths, openFileCommand, platformExecutable, platformLabel, runCommand, runtimeChecks, tsunderePaths } from "./platform/index.js";
-import { compareVersions, latestRelease, selfUpdate } from "./updater.js";
+import { compareVersions, configureDailyUpdateCheck, latestRelease, selfUpdate } from "./updater.js";
 
 const [, , command = "help", ...args] = process.argv;
 const cliRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -122,8 +122,23 @@ async function runtime(args: string[]): Promise<number> {
 
 async function updater(args: string[]): Promise<number> {
   const action = args[0] ?? "check";
-  if (!["check", "self", "info"].includes(action)) {
-    throw new Error("Usage: tsundere updater [check|self|info] [--yes] [--force] [--dry-run]");
+  if (!["check", "self", "info", "cron"].includes(action)) {
+    throw new Error("Usage: tsundere updater [check|self|info|cron] [--yes] [--force] [--dry-run]");
+  }
+  if (action === "cron") {
+    const cronAction = args[1] ?? "install";
+    if (!["install", "remove", "status"].includes(cronAction)) {
+      throw new Error("Usage: tsundere updater cron [install|remove|status] [--time HH:mm]");
+    }
+    const code = await configureDailyUpdateCheck({
+      action: cronAction as "install" | "remove" | "status",
+      cliPath: fileURLToPath(import.meta.url),
+      time: readFlag(args, "--time") ?? "10:00"
+    });
+    if (code === 0 && cronAction === "install") {
+      console.log("Tsundere updater will check for releases once a day.");
+    }
+    return code;
   }
   const current = packageVersion();
   const repo = updateRepo();
@@ -547,6 +562,7 @@ Usage:
   tsundere cache clean
   tsundere update [package]
   tsundere updater [check|self|info] [--yes] [--force] [--dry-run]
+  tsundere updater cron [install|remove|status] [--time HH:mm]
   tsundere version
   tsundere doctor
   tsundere format

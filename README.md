@@ -45,6 +45,20 @@ Tsundere is not trying to be a giant prebuilt bot. It does not ship economy, tic
 - Discord IntelliSense metadata generation
 - npm and pnpm package compatibility
 
+## Installation
+
+Powershell Command for installing Tsundere
+
+```powershell
+
+```
+
+Linux Install Command
+
+```bash
+
+```
+
 ## Quick Start
 
 ```powershell

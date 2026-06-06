@@ -179,6 +179,7 @@ function normalizeSyntax(source: string, filename: string, diagnostics: Diagnost
   output = lowerNativeEmbeds(output);
   output = lowerNativeObjectCalls(output);
   output = lowerNativeFunctions(output);
+  output = output.replace(/\bcatch\s+([A-Za-z_$][\w$]*)\s*\{/gu, "catch ($1) {");
   output = output.replace(/\bif\s+([^{()\n][^{\n]*?)\s*\{/gu, "if ($1) {");
   output = output.replace(/\belse\s+if\s+([^{()\n][^{\n]*?)\s*\{/gu, "else if ($1) {");
   output = output.replace(/\bmatch\s*\((.*?)\)\s*\{/gsu, (_match, expression: string) => {

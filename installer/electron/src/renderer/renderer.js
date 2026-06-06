@@ -15,7 +15,9 @@ const state = {
   updateMode: "notify",
   telemetryMode: "crash",
   telemetryProvider: "disabled",
-  telemetryEndpoint: ""
+  telemetryEndpoint: "",
+  installResult: undefined,
+  existingStatus: undefined
 };
 
 const pages = [
@@ -50,6 +52,12 @@ async function init() {
   document.getElementById("maximizeWindow").addEventListener("click", () => window.tsundereInstaller.toggleMaximize());
   document.getElementById("closeWindow").addEventListener("click", () => window.tsundereInstaller.close());
   render();
+  window.tsundereInstaller.status().then((status) => {
+    state.existingStatus = status;
+    if (state.page === 0 || state.page === 5 || state.page === 7) {
+      render();
+    }
+  });
   window.tsundereInstaller.detect().then((result) => {
     state.detection = result;
     if (state.page === 2 || state.page === 4) {
@@ -144,7 +152,7 @@ welcomePage.render = () => {
       <div class="stack">
         <div class="status"><strong>Runtime</strong><span>Node-compatible</span></div>
         <div class="status"><strong>Language</strong><span>.yuri projects</span></div>
-        <div class="status"><strong>Installer</strong><span>Electron EXE</span></div>
+        <div class="status"><strong>Installed</strong><span>${state.existingStatus?.installed ? "Repair / update mode" : "Fresh install"}</span></div>
       </div>
     </div>
   `;
@@ -281,6 +289,7 @@ locationPage.render = () => {
         ${statusItem("pnpm", state.detection.pnpm)}
         ${statusItem("Disk Space", { installed: true, version: "About 250 MB" })}
       </div>
+      ${state.existingStatus ? renderChecks(state.existingStatus.checks) : ""}
       <p class="pill">If Node.js or npm is missing, install Node.js first, then rerun this installer.</p>
     </div>
   `;
@@ -297,13 +306,17 @@ installPage.disabled = true;
 installPage.render = async () => {
   content.innerHTML = `
     <div class="stack">
-      <div class="progress"><div></div></div>
+      <div class="progress"><div id="progressBar"></div></div>
       <p id="installStatus">Starting installation...</p>
       <pre id="installLog"></pre>
     </div>
   `;
   back.style.visibility = "hidden";
   next.disabled = true;
+  const dispose = window.tsundereInstaller.onProgress((progress) => {
+    document.getElementById("installStatus").textContent = progress.label;
+    document.getElementById("progressBar").style.width = `${progress.percent}%`;
+  });
   try {
     const result = await window.tsundereInstaller.install({
       installPath: state.installPath,
@@ -315,13 +328,19 @@ installPage.render = async () => {
       telemetryEndpoint: state.telemetryEndpoint,
       packages: state.packages
     });
+    dispose();
+    state.installResult = result;
     document.getElementById("installStatus").textContent = "Installation complete.";
+    document.getElementById("progressBar").style.width = "100%";
     document.getElementById("installLog").textContent = result.logs.join("\n\n");
-    setTimeout(() => {
-      state.page = 6;
+    next.textContent = "Review";
+    next.disabled = false;
+    installPage.next = async () => {
+      state.page = 7;
       render();
-    }, 700);
+    };
   } catch (error) {
+    dispose();
     document.getElementById("installStatus").textContent = "Installation failed.";
     document.getElementById("installLog").textContent = error.message || String(error);
     next.textContent = "Retry";
@@ -335,12 +354,14 @@ completePage.title = "Tsundere is Ready";
 completePage.subtitle = "Installation finished. Start a project, open docs, or join the community.";
 completePage.button = "Finish";
 completePage.render = () => {
+  const checks = state.installResult?.status?.checks ?? state.existingStatus?.checks ?? [];
   content.innerHTML = `
     <div class="stack">
       <div class="grid">
         <div class="status"><strong>Installed Version</strong><span>${state.meta.version}</span></div>
         <div class="status"><strong>Install Path</strong><span>${state.installPath}</span></div>
       </div>
+      ${renderChecks(checks)}
       <pre>tsundere create my-bot
 tsundere dev
 tsundere build</pre>
@@ -356,3 +377,22 @@ tsundere build</pre>
   });
 };
 completePage.next = async () => window.close();
+
+function renderChecks(checks = []) {
+  if (!checks.length) {
+    return "";
+  }
+  return `
+    <div class="checklist">
+      ${checks.map((check) => `
+        <div class="check-item ${check.ok ? "ok" : ""}">
+          <div class="check-dot"></div>
+          <div>
+            <strong>${check.label}</strong>
+            <span>${check.detail}</span>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}

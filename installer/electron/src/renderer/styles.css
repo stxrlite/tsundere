@@ -292,16 +292,11 @@ h2 {
 }
 
 .progress div {
-  width: 48%;
+  width: 0%;
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--pink), #ffd0e4);
-  animation: progress 1.25s infinite ease-in-out;
-}
-
-@keyframes progress {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(220%); }
+  transition: width 220ms ease;
 }
 
 footer {
@@ -349,4 +344,37 @@ pre {
   padding: 14px;
   color: var(--muted);
   background: #17111b;
+}
+
+.checklist {
+  display: grid;
+  gap: 10px;
+}
+
+.check-item {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 11px;
+  background: rgba(23, 17, 27, 0.72);
+}
+
+.check-dot {
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: var(--yellow);
+}
+
+.check-item.ok .check-dot {
+  background: var(--green);
+}
+
+.check-item span {
+  color: var(--muted);
+  font-size: 12px;
 }

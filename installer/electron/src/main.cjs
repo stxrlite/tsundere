@@ -81,45 +81,58 @@ ipcMain.handle("installer:detect", async () => ({
   cursor: await commandStatus("cursor", ["--version"])
 }));
 
-ipcMain.handle("installer:install", async (_event, options) => {
+ipcMain.handle("installer:status", async () => installStatus());
+
+ipcMain.handle("installer:install", async (event, options) => {
   const logs = [];
   const installRoot = options.installPath || path.join(os.homedir(), "AppData", "Local", "Tsundere");
   const configRoot = path.join(os.homedir(), "AppData", "Roaming", "Tsundere");
   const binRoot = path.join(installRoot, "bin");
   const telemetry = createTelemetry(configRoot, { ...options, version, channel });
+  const progress = (percent, label) => event.sender.send("installer:progress", { percent, label });
+  progress(5, "Checking existing installation...");
   await telemetry.capture("install_started", { components: options.components, packages: options.packages });
   fs.mkdirSync(installRoot, { recursive: true });
   fs.mkdirSync(configRoot, { recursive: true });
   fs.mkdirSync(binRoot, { recursive: true });
 
-  const cliAsset = findFirst(payloadPath(), /^tsundere-cli.*\.tgz$/i);
-  if (options.components.cli && cliAsset) {
-    logs.push(await run("npm", ["install", "-g", cliAsset]));
-  }
-
-  const vsix = findFirst(payloadPath(), /^vscode-tsundere.*\.vsix$/i);
-  if (options.components.editor && vsix && (options.editorMode === "both" || options.editorMode === "vscode")) {
-    logs.push(await run("code", ["--install-extension", vsix, "--force"], { optional: true }));
-  }
-  if (options.components.editor && vsix && (options.editorMode === "both" || options.editorMode === "cursor")) {
-    logs.push(await run("cursor", ["--install-extension", vsix, "--force"], { optional: true }));
-  }
-
-  const docsSource = resourcePath("docs");
-  if (options.components.docs && fs.existsSync(docsSource)) {
-    copyDir(docsSource, path.join(installRoot, "docs"));
-  }
-
+  progress(12, "Preparing uninstaller and folders...");
   const uninstallSource = resourcePath("scripts", "TsundereUninstall.ps1");
   if (fs.existsSync(uninstallSource)) {
     fs.copyFileSync(uninstallSource, path.join(installRoot, "uninstall.ps1"));
   }
 
+  const cliAsset = findFirst(payloadPath(), /^tsundere-cli.*\.tgz$/i);
+  if (options.components.cli && cliAsset) {
+    progress(28, "Installing Tsundere CLI...");
+    logs.push(await run("npm", ["install", "-g", cliAsset]));
+  } else {
+    logs.push("Tsundere CLI package was not selected or not found in the payload.");
+  }
+
+  const vsix = findFirst(payloadPath(), /^vscode-tsundere.*\.vsix$/i);
+  if (options.components.editor && vsix && (options.editorMode === "both" || options.editorMode === "vscode")) {
+    progress(46, "Installing VS Code extension...");
+    logs.push(await run("code", ["--install-extension", vsix, "--force"], { optional: true }));
+  }
+  if (options.components.editor && vsix && (options.editorMode === "both" || options.editorMode === "cursor")) {
+    progress(56, "Installing Cursor extension...");
+    logs.push(await run("cursor", ["--install-extension", vsix, "--force"], { optional: true }));
+  }
+
+  const docsSource = resourcePath("docs");
+  if (options.components.docs && fs.existsSync(docsSource)) {
+    progress(68, "Installing local documentation...");
+    copyDir(docsSource, path.join(installRoot, "docs"));
+  }
+
+  progress(78, "Configuring PATH and preferences...");
   await addUserPath(binRoot);
   writeInstallerConfig(configRoot, installRoot, options);
   registerUninstaller(installRoot);
 
   if (options.updateMode !== "manual") {
+    progress(88, "Scheduling update checks...");
     await run("schtasks", [
       "/Create",
       "/SC",
@@ -134,8 +147,11 @@ ipcMain.handle("installer:install", async (_event, options) => {
     ], { optional: true });
   }
 
+  progress(96, "Verifying installation...");
+  const status = await installStatus(installRoot);
   await telemetry.capture("install_completed", { installRoot });
-  return { ok: true, logs };
+  progress(100, status.ready ? "Installation verified." : "Installation repaired. Review missing items.");
+  return { ok: true, logs, status };
 });
 
 ipcMain.handle("installer:open", (_event, target) => {
@@ -169,7 +185,7 @@ ipcMain.handle("window:close", (event) => {
 
 function commandStatus(command, args) {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { shell: true });
+    const child = spawn(command, args, { shell: true, windowsHide: true });
     let output = "";
     child.stdout.on("data", (chunk) => {
       output += chunk.toString();
@@ -183,7 +199,7 @@ function commandStatus(command, args) {
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { shell: true });
+    const child = spawn(command, args, { shell: true, windowsHide: true });
     let output = "";
     let error = "";
     child.stdout.on("data", (chunk) => {
@@ -253,9 +269,31 @@ function writeInstallerConfig(configRoot, installRoot, options) {
 function registerUninstaller(installRoot) {
   const uninstall = path.join(installRoot, "uninstall.ps1");
   const reg = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Tsundere";
-  spawn("reg", ["add", reg, "/f"], { shell: true });
-  spawn("reg", ["add", reg, "/v", "DisplayName", "/t", "REG_SZ", "/d", "Tsundere", "/f"], { shell: true });
-  spawn("reg", ["add", reg, "/v", "DisplayVersion", "/t", "REG_SZ", "/d", version, "/f"], { shell: true });
-  spawn("reg", ["add", reg, "/v", "Publisher", "/t", "REG_SZ", "/d", "TsundereLang", "/f"], { shell: true });
-  spawn("reg", ["add", reg, "/v", "UninstallString", "/t", "REG_SZ", "/d", `powershell -ExecutionPolicy Bypass -File "${uninstall}"`, "/f"], { shell: true });
+  spawn("reg", ["add", reg, "/f"], { shell: true, windowsHide: true });
+  spawn("reg", ["add", reg, "/v", "DisplayName", "/t", "REG_SZ", "/d", "Tsundere", "/f"], { shell: true, windowsHide: true });
+  spawn("reg", ["add", reg, "/v", "DisplayVersion", "/t", "REG_SZ", "/d", version, "/f"], { shell: true, windowsHide: true });
+  spawn("reg", ["add", reg, "/v", "Publisher", "/t", "REG_SZ", "/d", "TsundereLang", "/f"], { shell: true, windowsHide: true });
+  spawn("reg", ["add", reg, "/v", "UninstallString", "/t", "REG_SZ", "/d", `powershell -ExecutionPolicy Bypass -File "${uninstall}"`, "/f"], { shell: true, windowsHide: true });
+}
+
+async function installStatus(installRoot = path.join(os.homedir(), "AppData", "Local", "Tsundere")) {
+  const configRoot = path.join(os.homedir(), "AppData", "Roaming", "Tsundere");
+  const uninstall = path.join(installRoot, "uninstall.ps1");
+  const docs = path.join(installRoot, "docs");
+  const config = path.join(configRoot, "installer.json");
+  const cli = await commandStatus("tsundere", ["version"]);
+  const pathReady = (process.env.PATH || "").toLowerCase().includes(path.join(installRoot, "bin").toLowerCase());
+  const checks = [
+    { id: "cli", label: "Tsundere CLI", ok: cli.installed, detail: cli.version || "Not found" },
+    { id: "uninstaller", label: "Uninstaller", ok: fs.existsSync(uninstall), detail: uninstall },
+    { id: "config", label: "Installer config", ok: fs.existsSync(config), detail: config },
+    { id: "docs", label: "Local docs", ok: fs.existsSync(docs), detail: docs },
+    { id: "path", label: "PATH entry", ok: pathReady, detail: path.join(installRoot, "bin") }
+  ];
+  return {
+    installed: fs.existsSync(installRoot) || cli.installed,
+    ready: checks.every((check) => check.ok),
+    installRoot,
+    checks
+  };
 }

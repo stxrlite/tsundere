@@ -170,6 +170,22 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -NoExit -File "%~dp0install-ts
   Copy-Required (Join-Path $root "scripts/install-tsundere-linux.sh") (Join-Path $release "install-tsundere-linux.sh")
   Copy-Required (Join-Path $root "updater/update-tsundere.ps1") (Join-Path $release "update-tsundere.ps1")
 
+  $electronInstallerRoot = Join-Path $root "installer/electron"
+  $electronInstallerOut = Join-Path $electronInstallerRoot "out"
+  if (Test-Path (Join-Path $electronInstallerRoot "node_modules")) {
+    if (Test-Path $electronInstallerOut) {
+      Remove-Item $electronInstallerOut -Recurse -Force
+    }
+    npm.cmd --prefix $electronInstallerRoot run build:portable
+    $electronExe = Get-ChildItem $electronInstallerOut -Filter "Tsundere-Setup-*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($electronExe) {
+      Copy-Item -LiteralPath $electronExe.FullName -Destination $release -Force
+    }
+  }
+  else {
+    Write-Warning "Electron installer dependencies are missing. Run npm install --prefix installer/electron to include the EXE."
+  }
+
   $cliTgz = Get-ChildItem $release -Filter "tsundere-cli-*.tgz" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
   if (-not $cliTgz) {
     throw "Missing tsundere-cli package tarball."
@@ -185,6 +201,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -NoExit -File "%~dp0install-ts
   Fresh-Directory $bundleDir
   Ensure-Directory (Join-Path $bundleDir "packages")
   Ensure-Directory (Join-Path $bundleDir "editor")
+  Ensure-Directory (Join-Path $bundleDir "installers")
   Ensure-Directory (Join-Path $bundleDir "checksums")
   Ensure-Directory (Join-Path $bundleDir "docs")
 
@@ -198,6 +215,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -NoExit -File "%~dp0install-ts
   Copy-Required $cliTgz.FullName (Join-Path $bundleDir "packages/$($cliTgz.Name)")
   Copy-Required $discordTgz.FullName (Join-Path $bundleDir "packages/$($discordTgz.Name)")
   Copy-Required (Join-Path $release $vsix.Name) (Join-Path $bundleDir "editor/$($vsix.Name)")
+  $releaseElectronExe = Get-ChildItem $release -Filter "Tsundere-Setup-*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+  if ($releaseElectronExe) {
+    Copy-Required $releaseElectronExe.FullName (Join-Path $bundleDir "installers/$($releaseElectronExe.Name)")
+  }
 
   $readme = @"
 # Tsundere v$Version
@@ -233,6 +254,7 @@ Automatic CLI updater:
 - `packages/tsundere-cli-$Version.tgz`: versioned CLI package.
 - `packages/tsundere-discord-$Version.tgz`: versioned Discord runtime package.
 - `editor/$($vsix.Name)`: VS Code and Cursor extension.
+- `installers/Tsundere-Setup-$Version-x64.exe`: Electron installer app when Electron dependencies are installed.
 - `update-tsundere.ps1`: automatic CLI updater wrapper.
 - `checksums/SHA256SUMS.txt`: SHA256 checksums for release files.
 

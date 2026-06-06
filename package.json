@@ -26,6 +26,9 @@
     "test:unit": "npm run build && node --test tests/*.test.mjs",
     "doctor": "node dist/cli.js doctor",
     "linux:install": "sh scripts/install-linux.sh",
+    "installer:electron": "npm --prefix installer/electron run dev",
+    "installer:electron:build": "npm --prefix installer/electron run build:win",
+    "installer:electron:portable": "npm --prefix installer/electron run build:portable",
     "vscode:build": "npm --prefix packages/vscode-tsundere run build",
     "vscode:package": "npm --prefix packages/vscode-tsundere run package",
     "dist:release": "powershell -ExecutionPolicy Bypass -File scripts/build-distribution.ps1"

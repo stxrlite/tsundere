@@ -301,11 +301,18 @@ function runtimeEntry(config: TsundereConfig, cwd: string): string {
 }
 
 function spawnNode(entry: string, cwd: string): ChildProcess {
-  return spawn(process.execPath, [entry], {
+  const child = spawn(process.execPath, [entry], {
     cwd,
-    stdio: "inherit",
+    stdio: ["inherit", "pipe", "pipe"],
     env: { ...process.env, ...readDotEnv(cwd) }
   });
+  child.stdout?.on("data", (chunk: Buffer) => {
+    process.stdout.write(chunk);
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    process.stderr.write(rewriteRuntimeBranding(chunk.toString()));
+  });
+  return child;
 }
 
 function waitForProcess(child: ChildProcess): Promise<number> {
@@ -336,4 +343,23 @@ function readDotEnv(cwd: string): Record<string, string> {
     env[key] = value;
   }
   return env;
+}
+
+function rewriteRuntimeBranding(output: string): string {
+  return output.replace(/\bNode\.js (v\d+\.\d+\.\d+)\b/gu, (_match, nodeVersion: string) => {
+    return `Tsundere Runtime ${runtimeVersion()} (${nodeVersion})`;
+  });
+}
+
+function runtimeVersion(): string {
+  const packagePath = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "package.json");
+  if (!existsSync(packagePath)) {
+    return "0.0.0";
+  }
+  try {
+    const manifest = JSON.parse(readFileSync(packagePath, "utf8")) as { version?: string };
+    return manifest.version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
 }

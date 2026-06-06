@@ -7,10 +7,11 @@ import {
   type GuildMember as DiscordGuildMember,
   type Interaction as DiscordInteraction,
   type Message as DiscordMessage,
+  type TextBasedChannel,
   type User as DiscordUser,
   type VoiceState as DiscordVoiceState
 } from "discord.js";
-import type { Channel, DiscordEvents, EventName, Guild, Partials, PresenceData, Snowflake, User } from "./types.js";
+import type { Channel, DiscordEvents, EventName, Guild, Member, MemberRoles, Partials, PresenceData, Snowflake, User } from "./types.js";
 import { REST } from "./rest.js";
 import { CacheManager } from "./cache.js";
 
@@ -34,7 +35,7 @@ export class Client {
   readonly intents: number[];
   readonly partials: Partials[];
   readonly shards: number | "auto";
-  private readonly gateway?: DiscordGatewayClient;
+  readonly gateway?: DiscordGatewayClient;
   token?: string;
   user: User = createRuntimeUser();
   ping = 0;
@@ -101,12 +102,12 @@ export class Client {
       return;
     }
     gateway.once(Events.ClientReady, (readyClient) => {
-      this.user = mapUser(readyClient.user);
+      this.user = mapUser(readyClient.user, gateway);
       this.ping = gateway.ws.ping;
       this.emit("ready");
     });
     gateway.on(Events.InteractionCreate, (interaction) => {
-      this.emit("interactionCreate", createInteraction(interaction));
+      this.emit("interactionCreate", createInteraction(interaction, this));
     });
     gateway.on(Events.MessageCreate, (message) => {
       const mapped = mapMessage(message);
@@ -122,6 +123,28 @@ export class Client {
       const mapped = mapMember(member);
       this.cache.members.set(mapped);
       this.emit("guildMemberAdd", mapped);
+    });
+    gateway.on(Events.GuildMemberRemove, (member) => {
+      this.emit("guildMemberRemove", mapMember(member as DiscordGuildMember));
+    });
+    gateway.on(Events.MessageDelete, (message) => {
+      this.emit("messageDelete", mapMessage(message as DiscordMessage));
+    });
+    gateway.on(Events.MessageUpdate, (oldMessage, newMessage) => {
+      this.emit("messageUpdate", mapMessage(oldMessage as DiscordMessage), mapMessage(newMessage as DiscordMessage));
+    });
+    gateway.on(Events.ChannelCreate, (channel) => {
+      this.emit("channelCreate", mapChannel(channel as NonNullable<DiscordMessage["channel"]>));
+    });
+    gateway.on(Events.ChannelDelete, (channel) => {
+      this.emit("channelDelete", mapChannel(channel as NonNullable<DiscordMessage["channel"]>));
+    });
+    gateway.on(Events.ChannelUpdate, (oldChannel, newChannel) => {
+      this.emit(
+        "channelUpdate",
+        mapChannel(oldChannel as NonNullable<DiscordMessage["channel"]>),
+        mapChannel(newChannel as NonNullable<DiscordMessage["channel"]>)
+      );
     });
     gateway.on(Events.VoiceStateUpdate, (oldState, newState) => {
       this.emit("voiceStateUpdate", mapVoiceState(oldState), mapVoiceState(newState));
@@ -146,6 +169,10 @@ export class GuildManager {
   constructor(private readonly client: Client) {}
 
   async fetch(id: Snowflake): Promise<RuntimeGuild> {
+    if (this.client.gateway) {
+      const guild = await this.client.gateway.guilds.fetch(id);
+      return new RuntimeGuild(this.client, id, guild);
+    }
     let guild = this.guildCache.get(id);
     if (!guild) {
       guild = new RuntimeGuild(this.client, id);
@@ -161,6 +188,10 @@ export class ChannelManager {
   constructor(private readonly client: Client) {}
 
   async fetch(id: Snowflake): Promise<RuntimeChannel> {
+    if (this.client.gateway) {
+      const channel = await this.client.gateway.channels.fetch(id);
+      return new RuntimeChannel(this.client, id, channel && "send" in channel ? channel as TextBasedChannel : undefined);
+    }
     let channel = this.channelCache.get(id);
     if (!channel) {
       channel = new RuntimeChannel(this.client, id);
@@ -171,14 +202,15 @@ export class ChannelManager {
 }
 
 export class RuntimeGuild implements Guild {
-  readonly name = "Tsundere Guild";
+  readonly name: string;
   readonly members = new MemberManager(this);
   readonly channels: ChannelManager;
   readonly systemChannel: RuntimeChannel;
 
-  constructor(readonly client: Client, readonly id: Snowflake) {
+  constructor(readonly client: Client, readonly id: Snowflake, readonly native?: DiscordGuild) {
+    this.name = native?.name ?? "Tsundere Guild";
     this.channels = client.channels;
-    this.systemChannel = new RuntimeChannel(client, "system");
+    this.systemChannel = new RuntimeChannel(client, native?.systemChannelId ?? "system", native?.systemChannel as TextBasedChannel | undefined);
   }
 }
 
@@ -187,10 +219,12 @@ export class RuntimeChannel implements Channel {
   name?: string;
   guildId?: Snowflake;
 
-  constructor(readonly client: Client, readonly id: Snowflake) {}
+  constructor(readonly client: Client, readonly id: Snowflake, readonly native?: TextBasedChannel) {}
 
   async send(payload: unknown): Promise<void> {
-    void payload;
+    if (this.native && "send" in this.native && typeof this.native.send === "function") {
+      await this.native.send(payload as never);
+    }
   }
 }
 
@@ -199,7 +233,17 @@ export class MemberManager {
 
   constructor(private readonly guild: RuntimeGuild) {}
 
+  async fetch(id: Snowflake): Promise<RuntimeMember>;
+  async fetch(): Promise<Map<string, RuntimeMember>>;
   async fetch(id?: Snowflake): Promise<RuntimeMember | Map<string, RuntimeMember>> {
+    if (this.guild.native) {
+      if (!id) {
+        const members = await this.guild.native.members.fetch();
+        return new Map([...members.values()].map((member) => [member.id, new RuntimeMember(this.guild, member.id, member)]));
+      }
+      const member = await this.guild.native.members.fetch(id);
+      return new RuntimeMember(this.guild, member.id, member);
+    }
     if (!id) {
       return this.memberCache;
     }
@@ -211,8 +255,16 @@ export class MemberManager {
     return member;
   }
 
+  set(member: RuntimeMember): void {
+    this.memberCache.set(member.id, member);
+  }
+
   async ban(user: User | Snowflake, _options?: { reason?: string }): Promise<void> {
     const id = typeof user === "string" ? user : user.id;
+    if (this.guild.native) {
+      await this.guild.native.members.ban(id, _options);
+      return;
+    }
     this.memberCache.delete(id);
   }
 }
@@ -222,15 +274,15 @@ export class RuntimeMember {
   readonly guildId: Snowflake;
   readonly roles: RuntimeMemberRoles;
 
-  constructor(private readonly guild: RuntimeGuild, readonly id: Snowflake) {
+  constructor(private readonly guild: RuntimeGuild, readonly id: Snowflake, readonly native?: DiscordGuildMember) {
     this.guildId = guild.id;
-    this.user = {
+    this.user = native ? mapUser(native.user, guild.client.gateway) : {
       id,
       username: `User ${id}`,
       tag: `User${id}#0000`,
       bot: false
     };
-    this.roles = new RuntimeMemberRoles();
+    this.roles = new RuntimeMemberRoles(native);
   }
 
   toString(): string {
@@ -238,19 +290,43 @@ export class RuntimeMember {
   }
 
   async kick(_reason?: string): Promise<void> {
+    if (this.native) {
+      await this.native.kick(_reason);
+    }
     return;
   }
 
   async timeout(_duration: number, _reason?: string): Promise<void> {
+    if (this.native) {
+      await this.native.timeout(_duration, _reason);
+    }
     return;
   }
 }
 
 export class RuntimeMemberRoles {
-  readonly cache = new Set<Snowflake>();
+  readonly cache: Set<Snowflake>;
+
+  constructor(private readonly native?: DiscordGuildMember) {
+    this.cache = new Set(native ? [...native.roles.cache.keys()] : []);
+  }
 
   async add(roleId: Snowflake): Promise<void> {
+    if (this.native) {
+      await this.native.roles.add(roleId);
+    }
     this.cache.add(roleId);
+  }
+
+  async remove(roleId: Snowflake): Promise<void> {
+    if (this.native) {
+      await this.native.roles.remove(roleId);
+    }
+    this.cache.delete(roleId);
+  }
+
+  includes(roleId: Snowflake): boolean {
+    return this.cache.has(roleId);
   }
 }
 
@@ -267,7 +343,7 @@ export function snowflake(value: string): Snowflake {
   return value;
 }
 
-function createRuntimeUser(): User {
+function createRuntimeUser(gateway?: DiscordGatewayClient): User {
   const user: User = {
     id: "0",
     username: "Tsundere",
@@ -282,6 +358,7 @@ function createRuntimeUser(): User {
       ...user.presence,
       ...presence
     };
+    gateway?.user?.setPresence(presence as never);
   };
   return user;
 }
@@ -307,8 +384,8 @@ function mapPartial(partial: Partials): DiscordGatewayPartials {
   }
 }
 
-function mapUser(user: DiscordUser): User {
-  return {
+function mapUser(user: DiscordUser, gateway?: DiscordGatewayClient): User {
+  const mapped: User = {
     id: user.id,
     username: user.username,
     discriminator: user.discriminator,
@@ -320,6 +397,14 @@ function mapUser(user: DiscordUser): User {
       activities: []
     }
   };
+  mapped.setPresence = (presence: PresenceData): void => {
+    mapped.presence = {
+      ...mapped.presence,
+      ...presence
+    };
+    gateway?.user?.setPresence(presence as never);
+  };
+  return mapped;
 }
 
 function mapGuild(guild: DiscordGuild): Guild {
@@ -341,12 +426,34 @@ function mapChannel(channel: NonNullable<DiscordMessage["channel"]>): Channel {
   };
 }
 
-function mapMember(member: DiscordGuildMember): import("./types.js").Member {
+function mapMember(member: DiscordGuildMember): Member {
   return {
     id: member.id,
     user: mapUser(member.user),
     guildId: member.guild.id,
-    roles: [...member.roles.cache.keys()]
+    roles: mapMemberRoles(member)
+  };
+}
+
+function mapMemberRoles(member: DiscordGuildMember): MemberRoles {
+  return {
+    cache: {
+      has(roleId: Snowflake) {
+        return member.roles.cache.has(roleId);
+      },
+      keys() {
+        return member.roles.cache.keys();
+      }
+    },
+    includes(roleId: Snowflake) {
+      return member.roles.cache.has(roleId);
+    },
+    async add(roleId: Snowflake) {
+      await member.roles.add(roleId);
+    },
+    async remove(roleId: Snowflake) {
+      await member.roles.remove(roleId);
+    }
   };
 }
 
@@ -356,7 +463,11 @@ function mapMessage(message: DiscordMessage): import("./types.js").Message {
     channelId: message.channelId,
     ...(message.guildId ? { guildId: message.guildId } : {}),
     author: mapUser(message.author),
-    content: message.content
+    content: message.content,
+    channel: mapChannel(message.channel),
+    reply: async (response) => {
+      await message.reply(typeof response === "string" ? response : normalizeInteractionResponse(response));
+    }
   };
 }
 
@@ -368,15 +479,20 @@ function mapVoiceState(state: DiscordVoiceState): import("./types.js").VoiceStat
   };
 }
 
-function createInteraction(interaction: DiscordInteraction): import("./types.js").Interaction {
+function createInteraction(interaction: DiscordInteraction, client: Client): import("./types.js").Interaction {
   const commandName = "commandName" in interaction && typeof interaction.commandName === "string" ? interaction.commandName : undefined;
   const customId = "customId" in interaction && typeof interaction.customId === "string" ? interaction.customId : undefined;
+  const nativeGuild = interaction.guild ?? undefined;
+  const nativeMember = interaction.member && "user" in interaction.member ? interaction.member as DiscordGuildMember : undefined;
   return {
     id: interaction.id,
     token: interaction.token,
     ...(interaction.guildId ? { guildId: interaction.guildId } : {}),
     ...(interaction.channelId ? { channelId: interaction.channelId } : {}),
-    ...(interaction.user ? { user: mapUser(interaction.user) } : {}),
+    ...(interaction.user ? { user: mapUser(interaction.user, client.gateway) } : {}),
+    ...(nativeMember ? { member: mapMember(nativeMember) } : {}),
+    ...(nativeGuild ? { guild: new RuntimeGuild(client, nativeGuild.id, nativeGuild) } : {}),
+    ...(interaction.channel ? { channel: mapChannel(interaction.channel as NonNullable<DiscordMessage["channel"]>) } : {}),
     ...(commandName !== undefined ? { commandName } : {}),
     ...(customId !== undefined ? { customId } : {}),
     options: readInteractionOptions(interaction),
@@ -426,11 +542,19 @@ function createInteraction(interaction: DiscordInteraction): import("./types.js"
   };
 }
 
-function readInteractionOptions(interaction: DiscordInteraction): import("./types.js").InteractionOption[] {
+function readInteractionOptions(interaction: DiscordInteraction): import("./types.js").InteractionOptions {
+  const options = [] as unknown as import("./types.js").InteractionOptions;
+  options.user = (name: string) => readNativeOption(interaction, "getUser", name) as User | undefined;
+  options.string = (name: string) => readNativeOption(interaction, "getString", name) as string | undefined;
+  options.number = (name: string) => readNativeOption(interaction, "getNumber", name) as number | undefined;
+  options.integer = (name: string) => readNativeOption(interaction, "getInteger", name) as number | undefined;
+  options.boolean = (name: string) => readNativeOption(interaction, "getBoolean", name) as boolean | undefined;
+  options.channel = (name: string) => readNativeOption(interaction, "getChannel", name) as Channel | undefined;
+  options.role = (name: string) => readNativeOption(interaction, "getRole", name);
   if (!("options" in interaction) || !interaction.options || !("data" in interaction.options) || !Array.isArray(interaction.options.data)) {
-    return [];
+    return options;
   }
-  return interaction.options.data.map((option) => ({
+  options.push(...interaction.options.data.map((option) => ({
     name: option.name,
     type: String(option.type),
     ...("value" in option && option.value !== undefined ? { value: option.value } : {}),
@@ -439,7 +563,23 @@ function readInteractionOptions(interaction: DiscordInteraction): import("./type
       type: String(child.type),
       ...("value" in child && child.value !== undefined ? { value: child.value } : {})
     })) } : {})
-  }));
+  })));
+  return options;
+}
+
+function readNativeOption(interaction: DiscordInteraction, method: string, name: string): unknown {
+  if (!("options" in interaction) || !interaction.options || !isCallable(interaction.options, method)) {
+    return undefined;
+  }
+  const optionReader = interaction.options as unknown as Record<string, (optionName: string, required?: boolean) => unknown>;
+  const value = optionReader[method]?.(name, false);
+  if (method === "getUser" && value && typeof value === "object" && "id" in value && "username" in value) {
+    return mapUser(value as DiscordUser);
+  }
+  if (method === "getChannel" && value && typeof value === "object" && "id" in value) {
+    return mapChannel(value as NonNullable<DiscordMessage["channel"]>);
+  }
+  return value;
 }
 
 function normalizeInteractionResponse(response: import("./types.js").InteractionResponse): Record<string, unknown> {

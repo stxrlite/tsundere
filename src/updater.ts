@@ -1,6 +1,7 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { homedir, tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { platformExecutable, runCommand } from "./platform/index.js";
 
 export interface ReleaseAsset {
@@ -13,6 +14,7 @@ export interface TsundereRelease {
   tag: string;
   url: string;
   assets: ReleaseAsset[];
+  body?: string;
 }
 
 export interface SelfUpdateOptions {
@@ -31,6 +33,12 @@ export interface SelfUpdateResult {
   release?: TsundereRelease;
   asset?: ReleaseAsset;
   message: string;
+}
+
+export interface UpdateScheduleOptions {
+  action: "install" | "remove" | "status";
+  cliPath: string;
+  time?: string;
 }
 
 export async function latestRelease(repo: string, currentVersion = "0.0.0", fetchImpl: typeof fetch = fetch): Promise<TsundereRelease | undefined> {
@@ -53,7 +61,8 @@ export async function latestRelease(repo: string, currentVersion = "0.0.0", fetc
       version,
       tag: json.tag_name ?? `v${version}`,
       url: json.html_url ?? `https://github.com/${repo}/releases/latest`,
-      assets: Array.isArray(json.assets) ? json.assets : []
+      assets: Array.isArray(json.assets) ? json.assets : [],
+      body: typeof (json as { body?: unknown }).body === "string" ? (json as { body: string }).body : ""
     };
   } catch {
     return undefined;
@@ -166,4 +175,109 @@ async function downloadAsset(asset: ReleaseAsset, fetchImpl: typeof fetch): Prom
 
 async function installCliPackage(packagePath: string): Promise<number> {
   return runCommand(platformExecutable("npm"), ["install", "-g", packagePath]);
+}
+
+export async function securityUpdateNotice(currentVersion: string, repo: string, fetchImpl: typeof fetch = fetch): Promise<string | undefined> {
+  const cacheFile = join(homedir(), ".tsundere", "security-update-cache.json");
+  const cached = await readSecurityCache(cacheFile);
+  const now = Date.now();
+  if (cached && now - cached.checkedAt < 24 * 60 * 60 * 1000) {
+    return cached.message;
+  }
+  const release = await latestRelease(repo, currentVersion, fetchImpl);
+  let message: string | undefined;
+  if (release && compareVersions(release.version, currentVersion) > 0 && isSecurityRelease(release)) {
+    message = `Security update available: Tsundere ${currentVersion} -> ${release.version}. Run tsundere updater self --yes.`;
+  }
+  await writeSecurityCache(cacheFile, message ? { checkedAt: now, message } : { checkedAt: now });
+  return message;
+}
+
+function isSecurityRelease(release: TsundereRelease): boolean {
+  const text = `${release.tag}\n${release.version}\n${release.body ?? ""}`.toLowerCase();
+  return /\b(security|critical|vulnerability|cve-|exploit|hotfix|patch now)\b/u.test(text);
+}
+
+async function readSecurityCache(file: string): Promise<{ checkedAt: number; message?: string } | undefined> {
+  if (!existsSync(file)) {
+    return undefined;
+  }
+  try {
+    return JSON.parse(await readFile(file, "utf8")) as { checkedAt: number; message?: string };
+  } catch {
+    return undefined;
+  }
+}
+
+async function writeSecurityCache(file: string, value: { checkedAt: number; message?: string }): Promise<void> {
+  await mkdir(dirname(file), { recursive: true }).catch(() => undefined);
+  await writeFile(file, `${JSON.stringify(value, null, 2)}\n`, "utf8").catch(() => undefined);
+}
+
+export async function configureDailyUpdateCheck(options: UpdateScheduleOptions): Promise<number> {
+  if (process.platform === "win32") {
+    return configureWindowsUpdateTask(options);
+  }
+  return configureUnixUpdateCron(options);
+}
+
+async function configureWindowsUpdateTask(options: UpdateScheduleOptions): Promise<number> {
+  const taskName = "Tsundere Daily Update Check";
+  if (options.action === "status") {
+    return runCommand("schtasks", ["/Query", "/TN", taskName]);
+  }
+  if (options.action === "remove") {
+    return runCommand("schtasks", ["/Delete", "/TN", taskName, "/F"]);
+  }
+  const time = options.time ?? "10:00";
+  const node = platformExecutable("node");
+  const command = `"${node}" "${options.cliPath}" updater check`;
+  return runCommand("schtasks", [
+    "/Create",
+    "/SC",
+    "DAILY",
+    "/TN",
+    taskName,
+    "/TR",
+    command,
+    "/ST",
+    time,
+    "/F"
+  ]);
+}
+
+async function configureUnixUpdateCron(options: UpdateScheduleOptions): Promise<number> {
+  const marker = "# tsundere-daily-update-check";
+  const line = `0 10 * * * ${platformExecutable("node")} "${options.cliPath}" updater check ${marker}`;
+  const current = await readCurrentCrontab();
+  const filtered = current
+    .split(/\r?\n/u)
+    .filter((entry) => entry.trim() && !entry.includes(marker));
+  if (options.action === "status") {
+    console.log(current.includes(marker) ? "Tsundere daily update check is installed." : "Tsundere daily update check is not installed.");
+    return 0;
+  }
+  const next = options.action === "install" ? [...filtered, line] : filtered;
+  const temp = join(tmpdir(), `tsundere-cron-${Date.now()}.txt`);
+  await writeFile(temp, `${next.join("\n")}\n`, "utf8");
+  try {
+    return runCommand("crontab", [temp]);
+  } finally {
+    await rm(temp, { force: true }).catch(() => undefined);
+  }
+}
+
+async function readCurrentCrontab(): Promise<string> {
+  const temp = join(tmpdir(), `tsundere-cron-current-${Date.now()}.txt`);
+  const code = await runCommand("sh", ["-c", `crontab -l > "${temp}" 2>/dev/null || true`]);
+  if (code !== 0) {
+    return "";
+  }
+  try {
+    return await readFile(temp, "utf8");
+  } catch {
+    return "";
+  } finally {
+    await rm(temp, { force: true }).catch(() => undefined);
+  }
 }

@@ -26,6 +26,21 @@ test("Discord runtime exposes destroy for gateway cleanup", () => {
   client.destroy();
 });
 
+test("runtime guild members expose role add remove and cache helpers", async () => {
+  const client = new Client({
+    token: "test-token",
+    intents: [Intents.Guilds, Intents.GuildMembers],
+    gateway: "mock"
+  });
+  const guild = await client.guilds.fetch("1234567890");
+  const member = await guild.members.fetch("9876543210");
+  await member.roles.add("1111111111");
+  assert.equal(member.roles.cache.has("1111111111"), true);
+  assert.equal(member.roles.includes("1111111111"), true);
+  await member.roles.remove("1111111111");
+  assert.equal(member.roles.cache.has("1111111111"), false);
+});
+
 test("slash command registration waits for ready when application id is unknown", async () => {
   const client = new Client({
     token: "test-token",

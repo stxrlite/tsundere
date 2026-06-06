@@ -50,13 +50,26 @@ Tsundere is not trying to be a giant prebuilt bot. It does not ship economy, tic
 Powershell Command for installing Tsundere
 
 ```powershell
-
+powershell -c "irm https://raw.githubusercontent.com/TsundereLang/tsundere/refs/heads/master/install/install-tsundere-windows.ps1 | iex"
 ```
 
 Linux Install Command
 
-```bash
+Required components:
 
+- Curl or Wget
+- unzip nodejs npm
+
+If you have Curl installed please use the following command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/TsundereLang/tsundere/refs/heads/master/install/install-tsundere-linux.sh | bash
+```
+
+If you have Wget installed please use the following command:
+
+```bash
+wget -O- https://raw.githubusercontent.com/TsundereLang/tsundere/refs/heads/master/install/install-tsundere-linux.sh | bash
 ```
 
 ## Quick Start

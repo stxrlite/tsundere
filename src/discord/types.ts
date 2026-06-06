@@ -54,6 +54,14 @@ export interface Guild {
   id: Snowflake;
   name: string;
   ownerId?: Snowflake;
+  members?: {
+    fetch(id: Snowflake): Promise<Member>;
+    fetch(): Promise<Map<Snowflake, Member>>;
+  };
+  channels?: {
+    fetch(id: Snowflake): Promise<Channel>;
+  };
+  systemChannel?: Channel;
 }
 
 export interface Channel {
@@ -73,7 +81,17 @@ export interface Member {
   id: Snowflake;
   user: User;
   guildId: Snowflake;
-  roles: Snowflake[];
+  roles: MemberRoles;
+}
+
+export interface MemberRoles {
+  cache: {
+    has(roleId: Snowflake): boolean;
+    keys(): IterableIterator<Snowflake>;
+  };
+  includes(roleId: Snowflake): boolean;
+  add(roleId: Snowflake): Promise<void>;
+  remove(roleId: Snowflake): Promise<void>;
 }
 
 export interface Message {

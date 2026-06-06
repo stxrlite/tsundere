@@ -11,7 +11,7 @@ import {
   type User as DiscordUser,
   type VoiceState as DiscordVoiceState
 } from "discord.js";
-import type { Channel, DiscordEvents, EventName, Guild, Partials, PresenceData, Snowflake, User } from "./types.js";
+import type { Channel, DiscordEvents, EventName, Guild, Member, MemberRoles, Partials, PresenceData, Snowflake, User } from "./types.js";
 import { REST } from "./rest.js";
 import { CacheManager } from "./cache.js";
 
@@ -233,6 +233,8 @@ export class MemberManager {
 
   constructor(private readonly guild: RuntimeGuild) {}
 
+  async fetch(id: Snowflake): Promise<RuntimeMember>;
+  async fetch(): Promise<Map<string, RuntimeMember>>;
   async fetch(id?: Snowflake): Promise<RuntimeMember | Map<string, RuntimeMember>> {
     if (this.guild.native) {
       if (!id) {
@@ -251,6 +253,10 @@ export class MemberManager {
       this.memberCache.set(id, member);
     }
     return member;
+  }
+
+  set(member: RuntimeMember): void {
+    this.memberCache.set(member.id, member);
   }
 
   async ban(user: User | Snowflake, _options?: { reason?: string }): Promise<void> {
@@ -317,6 +323,10 @@ export class RuntimeMemberRoles {
       await this.native.roles.remove(roleId);
     }
     this.cache.delete(roleId);
+  }
+
+  includes(roleId: Snowflake): boolean {
+    return this.cache.has(roleId);
   }
 }
 
@@ -416,12 +426,34 @@ function mapChannel(channel: NonNullable<DiscordMessage["channel"]>): Channel {
   };
 }
 
-function mapMember(member: DiscordGuildMember): import("./types.js").Member {
+function mapMember(member: DiscordGuildMember): Member {
   return {
     id: member.id,
     user: mapUser(member.user),
     guildId: member.guild.id,
-    roles: [...member.roles.cache.keys()]
+    roles: mapMemberRoles(member)
+  };
+}
+
+function mapMemberRoles(member: DiscordGuildMember): MemberRoles {
+  return {
+    cache: {
+      has(roleId: Snowflake) {
+        return member.roles.cache.has(roleId);
+      },
+      keys() {
+        return member.roles.cache.keys();
+      }
+    },
+    includes(roleId: Snowflake) {
+      return member.roles.cache.has(roleId);
+    },
+    async add(roleId: Snowflake) {
+      await member.roles.add(roleId);
+    },
+    async remove(roleId: Snowflake) {
+      await member.roles.remove(roleId);
+    }
   };
 }
 
